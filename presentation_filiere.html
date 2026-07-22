@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Analyse de la Filière Maïs et Sécurité Alimentaire</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Jonathan David Manga &amp; Anta Ndao" />
+    <script src="sorties/presentation_libs/header-attrs/header-attrs.js"></script>
+    <link href="sorties/presentation_libs/remark-css/default.css" rel="stylesheet" />
+    <link href="sorties/presentation_libs/remark-css/metropolis.css" rel="stylesheet" />
+    <link href="sorties/presentation_libs/remark-css/metropolis-fonts.css" rel="stylesheet" />
+    <script src="sorties/presentation_libs/kePrint/kePrint.js"></script>
+    <link href="sorties/presentation_libs/lightable/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="custom_filiere.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+class: title-slide, center, middle
+background-image: url("sorties/mais.jpg")
+background-size: cover
+
+# Analyse de la Filière Maïs
+## Du Champ à l'Assiette au Burkina Faso (EHCVM 2021)
+
+&lt;br&gt;
+**Jonathan David Manga &amp; Anta Ndao**  
+Encadrant : M. Mouhamadou Hady Diallo  
+*ISEP2 — Projet de Statistique Appliquée avec R*
+
+---
+
+# Sommaire
+
+.pull-left[
+### 📊 Analyse de la Filière
+1. **Contexte &amp; Enjeux nationaux**
+2. **Pourquoi le Maïs ?** *(Module 1)*
+3. **Profilage des ménages** *(Module 2)*
+4. **Production &amp; Rendements** *(Module 3)*
+5. **Commercialisation &amp; Prix** *(Module 4)*
+6. **Sécurité Alimentaire &amp; Maïs** *(Module 5)*
+]
+
+.pull-right[
+### 🎯 Impact &amp; Livrables
+6. **Impact sur la sécurité alimentaire** *(Module 5)*
+7. **Le Package R** `filiereBFA`
+8. **Recommandations &amp; Conclusion**
+
+&lt;br&gt;
+.alerte[
+**Périmètre de l'étude :**  
+Données nationales EHCVM 2021 (7 176 ménages, 600 grappes, 13 régions du Burkina Faso)
+]
+]
+
+---
+
+class: inverse, center, middle
+
+# 1. Contexte &amp; Enjeux Nationaux
+
+---
+
+# Le Burkina Faso face au défi céréalier
+
+.pull-left[
+### Un contexte agro-économique sous contrainte
+- **Agriculture** : Secteur clé occupant **environ 77 %** de la population active.
+- **VULNÉRABILITÉ** : Dépendance forte aux aléas climatiques (pluviométrie) et à l'insécurité civile.
+- **Sécurité Alimentaire** : Les céréales fournissent la majorité des apports caloriques quotidiens au Sahel.
+
+### La source de données : EHCVM 2021
+- **Harmonisation UEMOA** : Données représentatives au niveau national, urbain/rural et régional.
+- **Richesse micro-économique** : Enquêtes intégrées Ménage (S07B, S08A, S16A-D) et Communautaires (QC).
+]
+
+.pull-right[
+.center[
+&lt;img src="sorties/Sorties_preambule/top10_produits_consommes_kg.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.footnote[*Top 10 des produits les plus consommés (en kg) — Source: EHCVM 2021*]
+]
+
+---
+
+class: inverse, center, middle
+
+# 2. Module 1 : Choix et Justification de la Filière
+
+---
+
+# La Première Céréale du Pays (Superficie &amp; Ventes)
+
+.pull-left[
+.center[
+### Part dans la superficie totale
+&lt;img src="sorties/Sorties_preambule/top10_produits_cultives.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.pull-right[
+.center[
+### Part dans les ventes agricoles
+&lt;img src="sorties/Sorties_preambule/top10_produits_vendus.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.resultat[
+**Le Maïs domine le paysage agricole burkinabè** : C'est la 1ère culture en termes de superficie mobilisée et la 1ère culture vendue sur le territoire des hommes intègres**
+]
+
+---
+
+# Consommation &amp; Dépendance du Marché
+
+.pull-left[
+.center[
+### Sources d'approvisionnement
+&lt;img src="sorties/Sorties_module_1/sources_mais.png" alt="" width="90%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.pull-right[
+.center[
+.alerte[
+**Constat clé :** L'autoconsommation ne représente que **42.79 %** des approvisionnements en maïs une part non negligeable. Les ménages achètent la majeure partie sur le marché.
+]]]
+
+---
+
+# Commerce Extérieur &amp; Balance Commerciale (FAOSTAT)
+
+.pull-left[
+.center[
+### Importations (tonnes)
+&lt;img src="sorties/Sorties_preambule/top10_importations_quantite.png" alt="" width="95%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.pull-right[
+.center[
+### Exportations (tonnes)
+&lt;img src="sorties/Sorties_preambule/top10_exportations_quantite.png" alt="" width="95%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.resultat[
+**Analyse du commerce :** Bien que le maïs ne soit pas la filière la plus commercialisée dans les échanges, il présente un enjeu majeur.Il est peu importe ce qui revele certainement une bonne capacite de prise en charge nationalement et fait parti du top 10 des produits les plus exportes 
+]
+
+---
+
+class: inverse, center, middle
+
+# 3. Module 2 : Profilage Socio-économique des Ménages
+
+---
+
+# Une Typologie en 4 Groupes Intégrés
+
+.pull-left[
+### Construction de la typologie
+
+À partir des sections **S16C** (culture) et **S07B** (consommation), nous répartissons la population en 4 groupes distincts :
+
+1. **Producteur-Consommateur** : Cultive et consomme du maïs.
+2. **Producteur uniquement** : Cultive du maïs mais n'en déclare pas la consommation directe.
+3. **Consommateur uniquement** : Dépend entièrement des achats sur le marché.
+4. **Ni producteur ni consommateur** : Ménages hors filière.
+]
+
+.pull-right[
+.alerte[
+**Intérêt théorique :**  
+Cette classification permet d'isoler l'effet direct de l'autoconsommation vs. la vulnérabilité liée aux chocs de prix sur les marchés.
+]
+
+&lt;br&gt;
+.center[
+&lt;img src="sorties/graph_m2_fies.png" alt="" width="90%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+---
+
+# Comparatif des Indicateurs par Groupe
+
+
+.center[
+&lt;table class="table table-striped table-hover table-condensed" style="font-size: 12px; width: auto !important; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; Groupe &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Ménages (pond.) &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Âge Chef &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; % Femme &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Taille &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; % Urbain &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; % Pauvres &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Score FIES &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; % FIES Mod. &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; % FIES Sév. &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; HDDS &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 1. Producteur-Conso &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 1,056,747 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 47.3 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 9.2 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 7.5 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 10.4 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 39.1 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 2.9 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 49.7 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 17.9 &lt;/td&gt;
+   &lt;td style="text-align:center;font-weight: bold;background-color: rgba(216, 230, 247, 255) !important;"&gt; 4.8 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 2. Producteur seul &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 263,594 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 43.9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 7.3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 8.2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2.9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 50.5 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3.4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 58.5 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 21.4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4.2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 3. Conso seul &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1,093,626 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 41.7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 18.7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 6.0 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 63.2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 17.5 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2.4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 42.9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 13.7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.2 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 4. Ni prod ni conso &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 819,001 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 43.8 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 17.0 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 5.9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 19.7 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 47.9 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3.5 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 61.1 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 27.3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3.8 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+&lt;br&gt;
+
+.resultat[
+**Lecture du tableau :** Les ménages **Producteurs-Consommateurs** affichent la meilleure sécurité alimentaire (Score FIES le plus bas, 2,9) malgré une pauvreté monétaire élevée — l'autoconsommation protège efficacement contre la faim. À l'inverse, le groupe **"Ni producteur ni consommateur"** cumule le score FIES le plus élevé (3,5) et le taux de pauvreté le plus fort (47,9 %), confirmant leur double vulnérabilité, hors filière maïs.
+]
+
+.footnote[*FIES (0-8, élevé = forte insécurité). HDDS (0-12, élevé = meilleure diversité alimentaire).*]
+---
+
+class: inverse, center, middle
+
+# 4. Module 3 : Production &amp; Rendements Agricoles
+
+---
+
+# Harmonisation des Unités &amp; Filtrage Agronomique
+
+.pull-left[
+### Réconciliation des Unités Locales
+- **Le Défi :** Utilisation fréquente d'unités locales (Tine, Yorouba, Sacs).
+- **Solution :** Harmonisation en **kg** à partir de la Table de conversion nationale Phase 2.
+
+### Méthode de calcul de la production
+- La section 16c ne présente pas de variable déterminant directement la production des ménages mais il y en a une pour les ménages n'ayant pas fini leur récolte.
+- La section 16d a été utilisée pour obtenir la production des ménages ayant fini leur récolte
+- Production (s16d) = Autocons + Don + Vente + Stock.
+
+### Winsorisation
+- Winsorisation au centile `\(p_1 / p_{99}\)` pour traiter les valeurs aberrantes.
+]
+
+.pull-right[
+### Bilan National Estimé
+
+.center[
+&lt;table class="table table-striped table-hover" style="font-size: 13px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; Indicateur &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Valeur &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; observations &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1841.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; superficie_nationale_ha &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1175138.5 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; Production nationale (tonnes) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 878933.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; Rendement national (kg/ha) &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 747.9 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; rendement_median_kg_ha &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 600.0 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+.alerte[
+**Ecart FAOSTAT :** Rendement national estimé à **~748 kg/ha** contre **1 521 kg/ha** (FAOSTAT), s'expliquant : 
+- Absence d'équivalent en unité standard de certaines unités locales.
+- Les quantités stockées ou autoconsommées sont observées uniquement au moment de l'enquête.
+6 Les statistiques de FAOSTAT correspondent à une estimation théorique de la production nationale. 
+]
+]
+
+---
+
+# Dispersion &amp; Cartographie des Rendements
+
+.pull-left[
+.resultat[
+**Lecture de la carte :** La majorité des grappes affichent des rendements modérés à faibles (teintes violettes, autour de 500-1 000 kg/ha), avec une **forte hétérogénéité intra-nationale** : coexistence de ménages à faible rendement et de foyers plus performants au sein d'une même zone. Les rendements les plus élevés (points jaunes/verts) se concentrent davantage dans l'**Est du pays**, avec toutefois une proportion non négligeable de bons rendements également observée dans la **région Centre**.
+]
+]
+.pull-right[
+.center[
+### Variabilité spatiale par grappe
+&lt;img src="sorties/sorties_module_3/carte_rendement_mais.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+---
+
+# Facteurs Explicatifs : Pluviométrie &amp; Intrants
+
+.pull-left[
+.center[
+### Corrélation avec les pluies (NASA POWER)
+&lt;img src="sorties/sorties_module_3/rendement_vs_pluie.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.pull-right[
+.center[
+### Taux d'utilisation des intrants
+&lt;img src="sorties/sorties_module_3/intrants_producteurs_mais.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.resultat[
+Chaque millimètre supplémentaire de pluie est associé à une augmentation moyenne d’environ
+0,66 kg/ha du rendement.
+]
+
+---
+
+class: inverse, center, middle
+
+# 5. Module 4 : Commercialisation &amp; Marge Commerciale
+
+---
+
+# La Structure des Prix sur la Chaîne de Valeur
+
+.col3[
+&lt;div class="chiffre-box"&gt;
+  &lt;span class="val"&gt;414 FCFA&lt;/span&gt;
+  &lt;span class="lab"&gt;Prix Producteur Moyen (/kg)&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="chiffre-box"&gt;
+  &lt;span class="val"&gt;1 066 FCFA&lt;/span&gt;
+  &lt;span class="lab"&gt;Prix Consommateur Moyen (/kg)&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="chiffre-box"&gt;
+  &lt;span class="val"&gt;652 FCFA&lt;/span&gt;
+  &lt;span class="lab"&gt;Marge Brute Moyenne (/kg)&lt;/span&gt;
+&lt;/div&gt;
+]
+
+&lt;br&gt;
+.resultat[
+**Un coefficient multiplicateur de 2,57×** entre le champ et l'assiette. Les coûts de transport, le manque d'infrastructures de stockage et le rôle des intermédiaires pèsent lourdement sur le prix final.
+]
+
+---
+
+# Analyse Spatiale des Marges Régionales
+
+.pull-left[
+.center[
+&lt;img src="sorties/graph_m4_marge.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.resultat[
+**Forte disparité régionale :** La marge varie de **887 FCFA/kg** dans les régions les plus rentables à des **marges négatives** (jusqu'à -165 FCFA/kg) dans les régions 1 et 13.
+]
+]
+
+.pull-right[
+.center[
+&lt;img src="sorties/Sorties_module_4/graph_pertes_par_cause.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+.resultat[
+**La sécheresse, cause dominante :** Elle génère plus de **10 600 cas** de pertes, loin devant le manque de main d'œuvre (8 256) et les animaux (1 131). Les insectes ne pèsent que 196 cas.
+]
+]
+
+---
+
+class: inverse, center, middle
+
+# 6. Module 5 : Analyse d'Impact sur la Sécurité Alimentaire
+
+---
+
+# Spécification Économétrique à Effets Fixes
+
+Afin de tester l'impact de la filière sur l'insécurité alimentaire, nous estimons le modèle :
+
+`$$\text{FIES}_i = \alpha + \beta_1 \text{Producteur}_i + \beta_2 \ln(\text{Revenu Maïs}_i) + \beta_3 \text{Taux Vente}_i + X'_i \gamma + \delta_{\text{région}} + \varepsilon_i$$`
+
+.pull-left[
+### Variables explicatives (`\(X_i\)`)
+- Taille du ménage
+- Scolarisation du chef de ménage
+- Possession de terres agricoles
+- Effets fixes Région &amp; Milieu
+]
+
+.pull-right[
+### Variables dépendantes alternées
+1. **Score FIES** (Inquiétude, Faim)
+2. **Score HDDS** (Diversité alimentaire)
+]
+
+---
+
+# Résultats Économétriques (Coefficients Estimés)
+
+.pull-left[
+.center[
+&lt;img src="sorties/Sorties_module_5/coefficients_m5_fies_hdds.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]
+]
+
+.pull-right[
+.center[
+
+.resultat[
+**Conclusion économétrique :** C'est la scolarisation du chef de ménage (Chef scolarisé) qui apparaît comme le déterminant le plus robuste et le plus cohérent de la sécurité alimentaire, sur les deux indicateurs à la fois :
+- Sur le FIES (rouge) : effet négatif net et marqué (environ -1), donc une réduction de l'insécurité alimentaire ;
+- Sur le HDDS (bleu) : effet positif net (environ +0.3 à +0.4), donc une meilleure diversité alimentaire.
+]]
+]
+
+---
+# Hétérogénéité spatiale de l'effet filière sur le score FIES
+
+Afin d'analyser si l'effet de la filière maïs varie selon les caractéristiques locales 
+et les dispositifs d'accompagnement, nous estimons des modèles avec termes d'interaction :
+
+
+`$$\text{FIES}_i = \alpha + \beta_1 Filière_i + \beta_2 Z_i+ \beta_3(Filière_i \times Z_i)+ X'_i\gamma + \delta_{\text{région}} + \varepsilon_i$$`
+
+
+
+.pull-left[
+### Variables explicatives (`\(X_i\)`)
+
+- Producteur de maïs
+- `\(\ln\)`(Revenu issu de la vente de maïs)
+- Taux de commercialisation
+- Taille du ménage
+- Niveau d'éducation du chef de ménage
+- Possession de terres agricoles
+
+**Effets fixes :**
+- Région
+- Milieu de résidence
+]
+
+.pull-right[
+### Effets d'interaction étudiés
+
+1. **Interaction coopération**
+   
+   - Taux de vente × Présence d'une coopérative villageoise
+
+2. **Interaction irrigation**
+   
+   - Producteur × Irrigation pratiquée au niveau du village
+]
+
+
+---
+
+# Résultats : Hétérogénéité spatiale de l'effet filière
+
+.pull-left[
+.center[
+&lt;img src="sorties/Sorties_module_5/coefficients_m5_heterogeneite.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+.pull-right[
+
+.resultat[
+
+Principaux enseignements
+L'effet de la filière maïs sur la sécurité alimentaire n'est pas homogène selon les contextes locaux.
+La commercialisation du maïs présente un effet négatif sur le score FIES, suggérant une réduction de l'insécurité alimentaire lorsque les ménages sont davantage intégrés au marché.
+L'interaction taux de vente × coopérative est positive mais incertaine, indiquant que la présence d'une organisation collective ne renforce pas systématiquement l'effet commercial.
+L'interaction avec l'irrigation montre également une faible différenciation de l'effet producteur, suggérant que les mécanismes d'accès au marché semblent plus déterminants que la seule capacité productive.
+
+]
+
+]
+---
+
+
+class: inverse, center, middle
+
+# 7. Le Package R `filiereBFA`
+
+---
+
+# Un Outil Reproductible et Généralisable
+
+.pull-left[
+### Fonctions Clés du Package
+- `load_filiere()` : Chargement automatisé des sections EHCVM.
+- `calc_rendement()` : Harmonisation et nettoyage des rendements.
+- `calc_fies()` &amp; `calc_hdds()` : Calcul des indicateurs de sécurité alimentaire.
+- `prix_chaine()` : Estimation des prix producteurs, consommateur et des marges.
+- `carte_filiere()` : Génération de cartes Leaflet interactives.
+]
+
+.pull-right[
+.resultat[
+**Généralisation UEMOA :**  
+Le package est conçu de façon modulaire et peut être déployé sur d'autres pays de la zone UEMOA partageant le masque d'enquête EHCVM.
+]
+]
+
+---
+
+class: inverse, center, middle
+
+# 8. Recommandations de Politiques Publiques
+
+---
+
+# Recommandations Opérationnelles
+
+.pull-left[
+### 1. Soutien à la Productivité
+- **Intrants &amp; Semences** : Élargir l'accès aux semences améliorées adaptées à la sécheresse.
+- **Irrigation** : Développer la petite irrigation pour réduire la dépendance pluviométrique.
+
+### 2. Structuration du Marché
+- **Réduction des Marges** : Améliorer les pistes rurales et désenclaver les zones de production.
+- **Stockage** : Investir dans des magasins de stockage modernes pour réduire les pertes post-récolte.
+]
+
+.pull-right[
+### 3. Organisation des Producteurs
+- **Coopératives** : Renforcer le rôle des groupements pour accroître le pouvoir de négociation des agriculteurs.
+- **Transparence des Prix** : Mettre en place des systèmes d'information sur les prix des marchés locaux.
+
+&lt;br&gt;
+.alerte[
+**Objectif Final :** Transformer le maïs d'une culture de subsistance à bas rendement en un véritable levier de croissance rurale.
+]
+]
+
+---
+
+class: inverse, center, middle
+
+# Merci de votre attention !
+
+### Des questions ou des commentaires ?
+
+&lt;br&gt;
+
+**Jonathan David Manga &amp; Anta Ndao**  
+*ISEP2 — Année Académique 2025/2026*  
+Encadrant : M. Mouhamadou Hady Diallo
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+  "highlightStyle": "github",
+  "highlightLines": true,
+  "countIncrementalSlides": false,
+  "ratio": "16:9",
+  "slideNumberFormat": "%current% / %total%"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+Package: filiereBFA
+Type: Package
+Title: Analyse de Filiere et Securite Alimentaire (EHCVM Burkina Faso)
+Version: 0.1.0
+Author: Binome 3 - ISEP2
+Maintainer: Binome 3 <hadem@example.com>
+Description: Ce package encapsule la chaine analytique du projet filiere EHCVM.
+    Il permet de charger, fusionner et analyser les donnees EHCVM (production,
+    consommation, prix, securite alimentaire) pour n'importe quel produit et pays.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 3.5.0)
+Imports:
+    haven,
+    tidyverse,
+    readxl,
+    labelled,
+    fixest,
+    sf,
+    gstat,
+    terra,
+    leaflet,
+    htmlwidgets,
+    ggplot2
+RoxygenNote: 7.3.3

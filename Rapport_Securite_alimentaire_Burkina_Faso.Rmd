@@ -1,0 +1,893 @@
+---
+title: ""
+subtitle: ""
+author: ""
+date: ""
+fontsize: 12pt
+output:
+  pdf_document:
+    number_sections: false
+  html_document:
+    toc: false
+    number_sections: true
+    theme: flatly
+    code_folding: hide
+    df_print: paged
+header-includes:
+  - \usepackage{tocloft}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+```{r page-garde, echo=FALSE, results='asis'}
+if (knitr::is_latex_output()) {
+  cat(r"(
+\begin{titlepage}
+\centering
+
+\includegraphics[width=0.22\textwidth]{Logo_ANSD.png}
+\hfill
+\includegraphics[width=0.22\textwidth]{Logo_ENSAE.jpeg}
+
+\vspace{0.4cm}
+{\color{gray}\hrule height 0.5pt}
+\vspace{0.3cm}
+
+{\large \textsc{Agence Nationale de la Statistique et de la Démographie (ANSD)}}\\[4pt]
+{\normalsize \textsc{École Nationale de la Statistique et de l'Analyse Économique Pierre Ndiaye (ENSAE)}}
+
+\vspace{1.2cm}
+
+{\color{gray}\hrule height 0.4pt}
+\vspace{1cm}
+
+{\Huge \bfseries Étude de la filière du maïs\\[0.3cm] au Burkina Faso}
+
+\vspace{0.6cm}
+
+{\Large \itshape à partir des données de l'EHCVM 2021}
+
+\vspace{0.4cm}
+{\color{gray}\hrule height 0.4pt}
+\vspace{1.5cm}
+
+\begin{minipage}{0.8\textwidth}
+\centering
+{\large \textbf{Rapport réalisé par :}}\\[8pt]
+{\Large Jonathan David Manga}\\
+{\Large Anta Ndao}\\[4pt]
+{\itshape Élèves ingénieurs statisticiens économistes, 2\textsuperscript{e} année}
+
+\vspace{0.4cm}
+
+{\large \textbf{Sous la supervision de :}}\\[8pt]
+{\Large Mouhammadou Hady Diallo}\\
+{\itshape Ingénieur des travaux statistiques}
+\end{minipage}
+
+\vfill
+
+{\color{gray}\hrule height 0.5pt}
+\vspace{0.3cm}
+{\large \textbf{Juillet 2026}}
+
+\end{titlepage}
+)")
+} else {
+  cat(r"(
+<div style="text-align:center; margin-bottom:40px;">
+<img src="Logo_ANSD.png" style="width:130px; margin-right:50px;">
+<img src="Logo_ENSAE.jpeg" style="width:130px;">
+<h4>Agence Nationale de la Statistique et de la Démographie (ANSD)</h4>
+<h5>École Nationale de la Statistique et de l'Analyse Économique Pierre Ndiaye (ENSAE)</h5>
+<hr style="width:60%; margin:30px auto;">
+<h1>Étude de la filière du maïs au Burkina Faso</h1>
+<h3>à partir des données de l'EHCVM 2021</h3>
+<hr style="width:60%; margin:30px auto;">
+<p><strong>Rapport réalisé par :</strong><br>
+Jonathan David Manga<br>
+Anta Ndao<br>
+<em>Élèves ingénieurs statisticiens économistes, 2<sup>e</sup> année</em></p>
+<p><strong>Sous la supervision de :</strong><br>
+Mouhammadou Hady Diallo<br>
+<em>Ingénieur des travaux statistiques</em></p>
+<p>Juillet 2026</p>
+</div>
+<div style="page-break-after: always;"></div>
+)")
+}
+```
+
+# Sommaire
+
+\renewcommand{\contentsname}{ }
+
+\setcounter{tocdepth}{1}
+
+\tableofcontents
+
+\newpage
+
+# Liste des graphiques
+
+\renewcommand{\listfigurename}{ }
+
+\listoffigures
+
+\newpage
+
+# Liste des sigles
+
+| Sigle | Signification |
+|------------------------------------|------------------------------------|
+| EHCVM | Enquête harmonisée sur les Conditions de Vie des Ménages |
+| FAO | Organisation des Nations Unies pour l'alimentation et l'agriculture (*Food and Agriculture Organization of the United Nations*) |
+| FAOSTAT | Base de données statistique de la FAO |
+| FE | Effets fixes (*Fixed Effects*) |
+| GPS | Global Positioning System |
+| INSD | Institut national de la Statistique et de la Démographie |
+| LSMS | Living Standards Measurement Study |
+| NASA | National Aeronautics and Space Administration |
+| OLS | Moindres carrés ordinaires (*Ordinary Least Squares*) |
+| UML | Unité de Mesure locale |
+
+\newpage
+
+# Résumé
+
+Le maïs constitue l'une des principales cultures vivrières du Burkina Faso et joue un rôle essentiel dans la sécurité alimentaire des ménages. Cette étude analyse la filière du maïs à partir des données de l'Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM 2021). L'objectif est d'évaluer la production nationale, d'estimer les rendements agricoles et d'identifier les principaux facteurs associés à leur variation, en particulier la disponibilité des engrais et des semences améliorées.
+
+La production a été reconstituée à partir des informations relatives aux récoltes, aux ventes, à l'autoconsommation, aux dons et aux stocks, après conversion des unités locales en kilogrammes. Les rendements ont ensuite été calculés puis analysés à l'aide de statistiques descriptives, d'une cartographie spatiale et de modèles économétriques avec effets fixes de grappe.
+
+Les résultats montrent un rendement moyen national estimé à **748 kg/ha**, inférieur aux estimations de la FAOSTAT mais cohérent avec les limites de mesure propres aux données d'enquête. Les analyses économétriques indiquent que les dépenses en intrants, les semences améliorées et l'irrigation ne présentent pas d'effet significatif sur les rendements une fois contrôlées les caractéristiques locales. En revanche, le niveau d'instruction du chef de ménage est positivement associé à la productivité, tandis que la pluviométrie exerce un effet positif et hautement significatif.
+
+L'étude conclut que l'amélioration durable des rendements du maïs ne repose pas uniquement sur la disponibilité des intrants agricoles. Elle nécessite également des politiques intégrées tenant compte des conditions agroécologiques, du renforcement des capacités des producteurs et de l'adaptation des pratiques agricoles aux contraintes climatiques et environnementales.
+
+**Mots-clés :** maïs, sécurité alimentaire, EHCVM, Burkina Faso, score FIES, score HDDS.
+
+\newpage
+
+# Abstract
+
+Maize is one of Burkina Faso's main staple crops and plays a central role in household food security. This study analyzes the maize value chain using data from the **2021 Harmonized Household Living Conditions Survey (EHCVM)**. Its main objective is to examine the determinants of maize productivity, with particular emphasis on the relationship between agricultural inputs (fertilizers and improved seeds) and crop yields.
+
+Maize production was reconstructed by combining information on harvested quantities, household consumption, sales, gifts, and stocks after converting local measurement units into kilograms using the national conversion table. Cultivated areas were estimated from plot-level data, allowing household yields to be computed. Descriptive statistics, spatial analysis, and weighted regression models with cluster fixed effects were then used to identify the main factors associated with yield variations. Rainfall data from the NASA POWER database were also integrated to assess the role of climatic conditions.
+
+The results estimate a national average maize yield of **748 kg/ha**, which is lower than the FAOSTAT reference value due to the inherent limitations of household survey data and incomplete conversion of local measurement units. Econometric findings indicate that expenditure on agricultural inputs, the use of improved seeds, and irrigation do not have statistically significant effects on maize yields once local heterogeneity is controlled for. Conversely, the education level of the household head is positively associated with productivity, while cumulative rainfall has a positive and highly significant effect on yields.
+
+These findings suggest that improving maize productivity in Burkina Faso cannot rely solely on increasing access to fertilizers and improved seeds. More comprehensive policies combining farmer training, climate adaptation, sustainable soil management, and improved agricultural advisory services are needed to achieve lasting gains in productivity and strengthen food security.
+
+**Keywords:** maize, food security, EHCVM, Burkina Faso, FIES score, HDDS score.
+
+\newpage
+
+# Introduction
+
+Au Burkina Faso, l'agriculture constitue l'un des principaux piliers de l'économie et demeure la principale source de revenus et d'emplois pour une grande partie de la population. Elle joue également un rôle déterminant dans la sécurité alimentaire du pays, qui reste confronté aux effets conjugués des chocs climatiques, de l'insécurité et des fluctuations des prix des produits alimentaires.
+
+Dans ce contexte, le maïs occupe une place stratégique parmi les cultures vivrières. Cette céréale est essentielle pour l'alimentation humaine, mais elle constitue également une matière première pour l'alimentation animale et plusieurs activités de transformation agroalimentaire. La littérature montre que la filière maïs connaît une croissance soutenue, portée par l'augmentation de la demande des ménages, du secteur avicole et des industries de transformation, faisant d'elle une composante importante de la sécurité alimentaire et du développement économique en Afrique de l'Ouest, notamment au Burkina Faso.
+
+Malgré ce potentiel, la filière maïs fait face à plusieurs contraintes. Les études mettent en évidence des niveaux de productivité encore inférieurs au potentiel agronomique, un accès parfois insuffisant aux semences améliorées, aux engrais et aux services de vulgarisation, ainsi qu'une forte sensibilité aux aléas climatiques tels que les sécheresses et les irrégularités des précipitations. Par ailleurs, les producteurs rencontrent des difficultés de commercialisation liées notamment à l'écoulement des excédents de production, à l'organisation des marchés et aux capacités limitées de transformation et de stockage.
+
+L'amélioration de la performance de cette filière constitue donc un enjeu majeur pour renforcer les revenus des producteurs et améliorer la sécurité alimentaire des ménages. Dans cette perspective, cette étude mobilise les données de l'Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM), complétées par les informations du questionnaire communautaire, afin d'analyser de manière intégrée les différentes composantes de la filière maïs, depuis la production jusqu'à la commercialisation. Cette démarche est conforme aux objectifs du projet, qui visent à étudier les interactions entre la filière agricole et la sécurité alimentaire à partir des données EHCVM.
+
+Plus précisément, cette recherche cherche à répondre à la question suivante : **la disponibilité d'engrais et de semences améliorées dans les localités est-elle associée à des rendements plus élevés du maïs au Burkina Faso ?** Cette problématique correspond à la question de recherche retenue pour le Burkina Faso dans le cadre du projet.
+
+L'originalité de cette étude réside dans l'exploitation conjointe des données sur les ménages, les exploitations agricoles et les caractéristiques des communautés locales afin d'identifier les principaux déterminants des rendements du maïs. Les résultats attendus contribueront à une meilleure compréhension des facteurs influençant la productivité de cette culture et fourniront des éléments utiles à l'élaboration de politiques agricoles visant à améliorer durablement la performance de la filière et la sécurité alimentaire au Burkina Faso.
+
+\newpage
+
+# Chapitre 1 : Contexte et données
+
+Cette étude porte sur la filière maïs au Burkina Faso et s'inscrit dans le cadre du projet « Étude de filière et sécurité alimentaire dans l'UEMOA », dont l'objectif est d'analyser de manière intégrée les différentes composantes d'une filière agricole, depuis la production jusqu'à la consommation, en mobilisant les données de l'Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM) et du questionnaire communautaire.
+
+## I.1 Profil du Burkina Faso
+
+### I.1.1 Profil géographique
+
+Le Burkina Faso est un pays enclavé et situé au cœur de l’Afrique de l’Ouest. Il couvre une superficie d’environ 274 000 km2 et partage ses frontières avec 6 pays : le Mali au Nord et à l’Ouest ; la Côte d’Ivoire, le Ghana, le Togo et le Bénin au Sud ; et le Niger à l’Est. Du fait de sa position géographique, le Burkina Faso est une zone de transition entre le sahel au Nord et les régions côtières et forestières au Sud. Il compte trois régions climatiques : Sahélien au Nord, Soudano-Sahélien au Centre et Soudanien au Sud.
+
+Ces trois régions climatiques commandent en grande partie la répartition spatiale des activités agricoles dans le pays. Le domaine sahélien qui couvre environ 25% du territoire a une pluviométrie moyenne annuelle comprise entre 300 et 600 mm avec des amplitudes thermiques élevées. Dans ce domaine, la saison des pluies ne dépasse pas généralement trois mois. L’activité agricole est dominée par l’élevage transhumant. Le cheptel y est important en termes de nombre et de densité.
+
+Le domaine soudano-sahélien couvre la partie centrale du pays entre les parallèles 11°N et 13°N. Les précipitations sont plus importantes (entre 600 et 900 mm de précipitations annuelles) et la saison sèche ne dure pas plus de 8 mois. Les températures atteignent 48°C au milieu de la saison sèche et 23°C pendant la saison des pluies. Dans ce domaine, les cultures dominantes sont le mil, le sorgho, le maïs, le riz, l’arachide, etc. Le domaine soudanien est localisé au sud. C’est là où les précipitations sont les plus abondantes ; elles peuvent dépasser plus de 1 100 mm de précipitations annuelles. L’amplitude thermique est la moins forte (pendant la saison sèche, les températures varient entre 28°C la nuit et 41°C le jour). La production agricole est dominée par les tubercules (igname, manioc, patate, etc.), les céréales (sorgho, maïs, riz) et le coton. C’est aussi la zone par excellence de l’arboriculture fruitière.
+
+### I.1.2 Profil économique
+
+L'économie du Burkina Faso repose toujours principalement sur l'agriculture et l'élevage, qui constituent les principaux moyens de subsistance de la majorité de la population et contribuent de manière importante à la création de richesse. Selon les estimations récentes du Gouvernement burkinabè et des institutions internationales, le secteur primaire demeure un pilier essentiel de l'économie malgré un contexte marqué par les effets du changement climatique, l'insécurité dans plusieurs régions et les perturbations des chaînes d'approvisionnement. Après les difficultés enregistrées au cours des années précédentes, la production agricole a fait preuve d'une certaine résilience grâce aux mesures de soutien de l'État, à la diffusion d'intrants agricoles et à l'aménagement de périmètres irrigués.
+
+La production agricole est dominée par les cultures vivrières, notamment le maïs, le sorgho, le mil et le riz, auxquelles s'ajoutent les principales cultures de rente que sont le coton, le sésame, l'arachide, le soja, l'anacarde et le karité. Le coton demeure une culture stratégique pour les exportations, même si la filière a connu des fluctuations ces dernières années en raison des attaques parasitaires, de la baisse des rendements et de l'évolution des prix internationaux. En parallèle, le développement des filières du sésame, du soja et de l'anacarde contribue progressivement à la diversification des exportations agricoles. Les productions maraîchères et fruitières, telles que la tomate, l'oignon, la pomme de terre, la mangue, la papaye, les agrumes et la banane, occupent également une place croissante dans l'approvisionnement des marchés locaux et régionaux.
+
+L'agriculture burkinabè demeure caractérisée par la prédominance des exploitations familiales de petite taille, reposant encore largement sur des pratiques culturales traditionnelles. Malgré les efforts de modernisation entrepris par les pouvoirs publics, le secteur continue de faire face à de nombreuses contraintes, notamment la variabilité climatique, la dégradation des terres, l'insuffisance de l'irrigation, le faible niveau de mécanisation, l'accès limité aux semences améliorées et aux engrais, ainsi que les difficultés d'accès au financement et aux marchés. À ces défis structurels s'ajoutent les conséquences de l'insécurité dans plusieurs zones rurales, qui limitent l'accès aux terres agricoles et perturbent les activités de production.
+
+L'élevage constitue le deuxième pilier du secteur agricole et joue un rôle déterminant dans les revenus des ménages ruraux. Le Burkina Faso dispose d'un important cheptel composé de bovins, d'ovins, de caprins, de porcins, d'équins et de volailles, ce qui le place parmi les principaux pays d'élevage de l'Union économique et monétaire ouest-africaine (UEMOA). L'activité est majoritairement pratiquée selon un mode extensif, bien que des initiatives visant à améliorer la productivité, la santé animale et la valorisation des produits d'élevage soient progressivement mises en œuvre. Les exportations de bétail sur pied vers les pays voisins demeurent une source importante de devises.
+
+Ces dernières années, les productions céréalières ont connu des évolutions contrastées sous l'effet des conditions climatiques et du contexte sécuritaire. Si les politiques publiques continuent de promouvoir l'autosuffisance alimentaire à travers l'augmentation des superficies emblavées, l'amélioration des rendements et le développement de l'irrigation, la couverture des besoins alimentaires reste soumise à d'importantes variations selon les campagnes agricoles. La production rizicole poursuit sa progression grâce aux investissements réalisés dans les périmètres irrigués, mais la production nationale demeure insuffisante pour satisfaire entièrement une demande intérieure en constante augmentation, ce qui maintient un recours significatif aux importations.
+
+La pêche continentale contribue également à la sécurité alimentaire et à la création d'emplois, bien que son poids économique demeure relativement modeste. Elle est pratiquée principalement dans les grands barrages et plans d'eau du pays, notamment ceux de Bagré, Kompienga, Samandéni, Sourou, Ziga et Dourou. Toutefois, le secteur fait face à plusieurs défis liés à la gestion durable des ressources halieutiques, aux effets du changement climatique et à l'insuffisance des infrastructures de conservation et de commercialisation.
+
+Enfin, l'industrie agroalimentaire burkinabè continue de se développer autour de la transformation des produits agricoles et de l'élevage. Les principales unités industrielles sont concentrées dans les villes de Ouagadougou, Bobo-Dioulasso, Banfora et Koudougou. Elles interviennent notamment dans la transformation des céréales, des oléagineux, des fruits, du lait, de la viande ainsi que dans les filières textiles liées au coton. Malgré les contraintes énergétiques, logistiques et sécuritaires, le développement de l'agro-industrie demeure un levier majeur de création de valeur ajoutée, de diversification économique et d'amélioration de la sécurité alimentaire du Burkina Faso.
+
+### I.1.3 Contexte démographique
+
+Selon les dernières estimations des Nations Unies, la population du Burkina Faso est estimée à près de 24,7 millions d'habitants en 2025, contre 20,5 millions lors du Recensement Général de la Population et de l'Habitation (RGPH) de 2019. Cette croissance démographique demeure parmi les plus élevées de la sous-région, avec un taux annuel d'accroissement d'environ 2,3 %. La population reste caractérisée par une forte jeunesse : les personnes âgées de moins de 15 ans représentent encore environ 43 % de la population totale, tandis que les personnes âgées de 65 ans et plus ne représentent qu'environ 3 %. Cette structure démographique se traduit par un rapport de dépendance élevé, exerçant une pression importante sur les systèmes d'éducation, de santé, de protection sociale et sur le marché du travail.
+
+La population en âge de travailler (15 à 64 ans) représente désormais près de 54 % de la population totale. Toutefois, une part importante de cette population demeure employée dans des activités à faible productivité, principalement dans le secteur informel. Selon les estimations de l'Organisation internationale du Travail (OIT), le taux de chômage au sens strict reste relativement faible, mais le sous-emploi, la précarité des emplois et l'informalité demeurent des défis majeurs, notamment pour les jeunes et les femmes.
+
+Le Burkina Faso demeure un pays majoritairement rural, bien que le processus d'urbanisation se poursuive progressivement. Les estimations récentes indiquent qu'environ 69 % de la population réside en milieu rural, contre 31 % en milieu urbain. Cette urbanisation reste principalement concentrée autour des grandes villes telles que Ouagadougou, Bobo-Dioulasso, Koudougou et Ouahigouya.
+
+L'agriculture constitue toujours la principale source de revenus et de moyens de subsistance de la population rurale. D'après les données de la Banque mondiale et de la FAO, le secteur agricole emploie près de 70 % de la population active et demeure le premier pourvoyeur d'emplois du pays. En milieu rural, la très grande majorité des actifs travaille dans les activités agricoles, pastorales ou forestières, souvent au sein d'exploitations familiales. Malgré son importance économique et sociale, ce secteur reste marqué par une faible mécanisation, une forte dépendance aux conditions climatiques, un accès limité aux intrants modernes et aux financements, ainsi qu'une faible productivité. Ces contraintes limitent les revenus des ménages agricoles et constituent un défi majeur pour la sécurité alimentaire, la réduction de la pauvreté et la transformation structurelle de l'économie burkinabè.
+
+### I.1.4 Situation sécuritaire et sociopolitique
+
+Le Burkina Faso demeure confronté à une crise sécuritaire majeure qui perdure depuis 2015 et continue d'affecter profondément son développement économique et social. Les violences liées aux groupes armés ont entraîné d'importants déplacements de populations, une dégradation des moyens de subsistance et une forte perturbation des activités agricoles. Selon les dernières données du Conseil national de secours d'urgence et de réhabilitation (CONASUR) et des agences humanitaires des Nations Unies, le pays comptait environ 2,1 millions de personnes déplacées internes (PDI) en 2025, faisant du Burkina Faso l'un des pays les plus touchés par les déplacements forcés en Afrique de l'Ouest.
+
+Cette population déplacée est constituée en grande partie de ménages ruraux dont les principales activités sont l'agriculture et l'élevage. Les régions les plus affectées, notamment le Sahel, l'Est, le Centre-Nord, la Boucle du Mouhoun et le Nord, figurent également parmi les principales zones de production agricole du pays. L'insécurité y limite l'accès aux terres cultivables, réduit les superficies emblavées, perturbe les campagnes agricoles et entrave les mouvements de transhumance, entraînant une baisse de la production agricole et pastorale.
+
+La crise sécuritaire exerce également une pression considérable sur les politiques publiques de développement rural et compromet les efforts de modernisation du secteur agricole. Les déplacements massifs de populations, les difficultés d'approvisionnement en intrants, l'abandon de nombreuses exploitations agricoles ainsi que les perturbations des circuits de commercialisation contribuent à aggraver l'insécurité alimentaire. Selon le Cadre Harmonisé et les analyses de la FAO et du Programme alimentaire mondial (PAM), plusieurs millions de personnes demeurent en situation d'insécurité alimentaire aiguë, particulièrement pendant la période de soudure.
+
+Alors qu'au moment du Recensement Général de la Population et de l'Habitation (RGPH) de 2019, le nombre de personnes déplacées internes restait relativement limité, la détérioration rapide de la situation sécuritaire a profondément modifié les conditions socio-économiques du pays. L'ensemble des secteurs d'activité est affecté par cette crise, mais l'agriculture et l'élevage restent les plus vulnérables en raison de leur forte dépendance à l'accès aux terres, à la mobilité des populations et à la stabilité des zones rurales. Cette situation constitue aujourd'hui l'un des principaux obstacles à la sécurité alimentaire, à la réduction de la pauvreté et à la résilience des ménages agricoles burkinabè.
+
+## I.2 Description de la filière du maïs au Burkina Faso
+
+Le maïs est l'une des principales cultures céréalières du Burkina Faso et occupe une place stratégique dans la sécurité alimentaire nationale. A côté du sorgho, du mil et du riz, il constitue l'une des principales sources d'alimentation des ménages. Sa production s'est fortement développée au cours des deux dernières décennies sous l'effet de la croissance démographique, de l'amélioration des techniques culturales et des politiques publiques visant à renforcer la production céréalière.
+
+La culture du maïs est pratiquée dans l'ensemble du pays, mais elle est particulièrement concentrée dans les régions bénéficiant de conditions agroclimatiques favorables, notamment les Hauts-Bassins, les Cascades, la Boucle du Mouhoun, les Hauts-Bassins, le Sud-Ouest et certaines parties du Centre-Ouest. Elle est essentiellement réalisée par de petites exploitations familiales, bien que des producteurs commerciaux soient également présents dans certaines zones à fort potentiel.
+
+Le maïs est principalement cultivé pendant la saison des pluies, même si le développement des périmètres irrigués permet progressivement la production de contre-saison dans certaines localités. Les systèmes de production restent majoritairement extensifs et dépendent fortement des précipitations. Les rendements demeurent relativement faibles par rapport au potentiel agronomique en raison de plusieurs contraintes, notamment la faible mécanisation, l'accès limité aux semences améliorées, aux engrais et aux produits phytosanitaires, la dégradation des sols, les effets du changement climatique ainsi que l'insuffisance des infrastructures de stockage et de commercialisation.
+
+La filière maïs comprend plusieurs acteurs intervenant tout au long de la chaîne de valeur. En amont, on retrouve les fournisseurs d'intrants agricoles (semences, engrais, pesticides et matériels agricoles) ainsi que les services de vulgarisation agricole. Les producteurs constituent le principal maillon de la filière. En aval interviennent les collecteurs, les commerçants, les transformateurs, les transporteurs, les grossistes, les détaillants ainsi que les consommateurs. Le maïs est commercialisé aussi bien sur les marchés locaux que régionaux et fait l'objet d'échanges avec les pays voisins, notamment ceux de la CEDEAO.
+
+Outre son rôle dans l'alimentation humaine, le maïs constitue une matière première importante pour les industries agroalimentaires. Il est utilisé dans la fabrication de farine, de semoule, de couscous, de boissons traditionnelles ainsi que dans l'alimentation animale, notamment pour les filières avicole et porcine. La demande en maïs connaît ainsi une croissance continue sous l'effet de l'urbanisation, du développement des industries de transformation et de l'expansion de l'élevage.
+
+Malgré son importance économique et alimentaire, la filière fait face à plusieurs défis. Les producteurs restent exposés aux aléas climatiques, aux attaques de ravageurs tels que la chenille légionnaire d'automne (*Spodoptera frugiperda*), à la volatilité des prix, aux difficultés d'accès au financement ainsi qu'aux effets de la crise sécuritaire qui limite l'accès aux terres agricoles dans plusieurs régions du pays. Ces contraintes affectent la productivité et réduisent les revenus des ménages agricoles.
+
+Face à ces défis, les autorités burkinabè et leurs partenaires techniques et financiers mettent en œuvre plusieurs programmes visant à améliorer la productivité et la résilience de la filière. Ces interventions portent notamment sur la diffusion de semences améliorées, le renforcement des capacités des producteurs, l'amélioration de l'accès aux intrants, le développement de l'irrigation, la promotion des pratiques agricoles durables et le renforcement des infrastructures de stockage et de commercialisation. Le développement de la filière maïs apparaît ainsi comme un levier essentiel pour renforcer la sécurité alimentaire, accroître les revenus des producteurs et soutenir la transformation structurelle de l'agriculture burkinabè.
+
+## I.3 Utilisation de la base EHCVM 2021
+
+L'analyse repose sur les données de la deuxième phase de l'EHCVM réalisée en 2021 au Burkina Faso. L'EHCVM est une enquête harmonisée mise en œuvre dans les pays de l'UEMOA afin de produire des statistiques comparables sur les conditions de vie, la consommation, la production agricole, les revenus et la sécurité alimentaire des ménages. Elle constitue aujourd'hui l'une des principales sources de données microéconomiques pour l'étude des systèmes agricoles et de la sécurité alimentaire dans la région.
+
+Conformément aux exigences du projet, cette étude combine plusieurs niveaux d'information. Les données ménages permettent d'analyser les caractéristiques socioéconomiques des producteurs et consommateurs, la consommation alimentaire, la sécurité alimentaire, la production agricole, la commercialisation ainsi que les équipements agricoles. Ces informations sont complétées par le questionnaire communautaire, qui renseigne notamment sur les caractéristiques des localités, l'accès aux marchés, la disponibilité des intrants, les services agricoles et les prix observés sur les marchés locaux.
+
+Plus précisément, les principales sections mobilisées sont :
+
+-   **S00** : identification et géolocalisation des ménages ;
+-   **S01** : caractéristiques sociodémographiques des ménages ;
+-   **S07B** : consommation alimentaire des sept derniers jours ;
+-   **S08A** : sécurité alimentaire des ménages (score FIES) ;
+-   **S10A et S10B** : activités non agricoles ;
+-   **S16A** : caractéristiques des parcelles agricoles ;
+-   **S16B** : utilisation des intrants agricoles ;
+-   **S16C** : cultures pratiquées et quantités récoltées ;
+-   **S16D** : utilisation et commercialisation de la production ;
+-   **S17** : élevage ;
+-   **S19** : équipements agricoles ;
+-   **S01, S02 et S03 du questionnaire communautaire** : caractéristiques des localités, accès aux services, disponibilité des intrants agricoles et environnement de production.
+
+Le script d'analyse importe également plusieurs fichiers complémentaires, notamment les poids d'enquête, une base de conversion des calories, les indicateurs de bien-être des ménages ainsi qu'une table de conversion des unités locales vers les kilogrammes. Cette dernière est indispensable pour harmoniser les unités de mesure utilisées par les producteurs et calculer correctement les rendements agricoles du maïs. L'ensemble des traitements statistiques est réalisé sous R.
+
+## I.4 Définition des mots clés
+
+### I.4.1 Sécurité alimentaire
+
+Selon la définition adoptée lors du Sommet mondial de l’alimentation de 1996, la sécurité alimentaire existe lorsque tous les individus ont, à tout moment, un accès physique, social et économique à une alimentation suffisante, saine et nutritive leur permettant de satisfaire leurs besoins énergétiques et leurs préférences alimentaires afin de mener une vie active et saine. Elle repose sur quatre dimensions principales : la disponibilité alimentaire, qui correspond à l’existence d’une quantité suffisante de denrées alimentaires ; l’accès à l’alimentation, qui désigne la capacité des ménages à se procurer ces aliments ; l’utilisation des aliments, liée à la qualité nutritionnelle, aux pratiques alimentaires et aux conditions sanitaires ; et la stabilité, qui renvoie à la continuité de l’accès à l’alimentation dans le temps.
+
+Dans le cadre de cette étude sur le maïs au Burkina Faso, la sécurité alimentaire est appréhendée à travers la capacité des ménages à disposer d’une alimentation suffisante et diversifiée, mesurée notamment à l’aide d’indicateurs comme le score FIES et le score HDDS.
+
+### I.4.2 Score FIES (Food Insecurity Experience Scale)
+
+Le Food Insecurity Experience Scale (FIES), ou Échelle de mesure de l’insécurité alimentaire vécue, est un indicateur développé par l’Organisation des Nations unies pour l’alimentation et l’agriculture (FAO) permettant de mesurer le niveau d’insécurité alimentaire ressenti par les individus ou les ménages à partir de leurs expériences et difficultés d’accès à une alimentation adéquate.
+
+Le score FIES repose sur une série de questions portant sur des situations vécues au cours d’une période de référence, telles que l’inquiétude de ne pas avoir suffisamment de nourriture, la réduction de la qualité ou de la quantité des aliments consommés, ou encore le fait d’avoir été contraint de sauter des repas faute de ressources. Les réponses permettent d’estimer le niveau d’insécurité alimentaire selon trois catégories principales : sécurité alimentaire ou insécurité alimentaire faible, insécurité alimentaire modérée et insécurité alimentaire sévère.
+
+Un score FIES élevé traduit donc une expérience plus importante de privation alimentaire et une plus grande vulnérabilité des ménages face à l’accès à la nourriture.
+
+### I.4.3 Score HDDS (Household Dietary Diversity Score)
+
+Le Household Dietary Diversity Score (HDDS), ou score de diversité alimentaire des ménages, est un indicateur utilisé pour mesurer la qualité de l’alimentation des ménages à travers le nombre de groupes alimentaires différents consommés sur une période donnée, généralement les dernières 24 heures.
+
+Il repose sur le principe selon lequel une alimentation diversifiée est généralement associée à une meilleure qualité nutritionnelle. Le score HDDS correspond ainsi au nombre de groupes alimentaires consommés parmi les catégories définies par les organismes internationaux (par exemple : céréales, racines et tubercules, légumes, fruits, viandes, poissons, œufs, produits laitiers, légumineuses, huiles et sucres).
+
+Un score HDDS élevé indique une plus grande diversité alimentaire et peut être associé à une meilleure situation nutritionnelle du ménage. À l’inverse, un score faible traduit une alimentation moins diversifiée et une possible vulnérabilité alimentaire.
+
+### I.4.4 EHCVM (Enquête Harmonisée sur les Conditions de Vie des Ménages)
+
+L’Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM) est une enquête statistique réalisée dans les pays membres de l’Union économique et monétaire ouest-africaine (UEMOA) sous la coordination de la Banque mondiale et des instituts nationaux de statistique.
+
+Elle vise à produire des données détaillées sur les conditions de vie des ménages, notamment leurs caractéristiques socioéconomiques, leurs revenus, leurs dépenses de consommation, leur situation alimentaire, leur accès aux services sociaux et leurs conditions d’habitation.
+
+Au Burkina Faso, l’EHCVM constitue une source importante de données pour analyser la pauvreté, les inégalités et la sécurité alimentaire des ménages. Dans cette étude, elle permet d’examiner les liens entre la production ou la consommation de maïs et les conditions d’accès à l’alimentation des ménages à travers différents indicateurs, notamment le score FIES et le score HDDS.
+
+\newpage
+
+# Chapitre II : Importance stratégique du maïs au Burkina
+
+Cette partie a pour objectif de démontrer, à partir de données empiriques, que le maïs est un produit stratégique pour la sécurité alimentaire et l'économie rurale au Burkina Faso.
+
+## II.1 Une place prépondérante dans la production agricole nationale
+
+Le maïs est une culture fondamentale pour l'agriculture burkinabè. Nos données extraites de l'EHCVM (Section 16C) révèlent que le maïs occupe 76,91% des superficies agricoles cultivées par les ménages, ce qui en fait de loin la première culture du pays en termes de surfaces emblavées. Ce taux dépasse assez largement celui du sorgho (68,33%), de l'arachide (58,73%) et du mil (43,12%).
+
+```{r, out.width="70%", fig.align="center", fig.cap="Top 10 produits cultivés (part de surface agricole)"}
+include_graphics("sorties/Sorties_preambule/top10_produits_cultives.png")
+```
+
+Ces résultats témoignent du rôle central du maïs dans les systèmes de production agricole du Burkina Faso. De plus, les ménages agricoles ont plus tendance à se tourner vers la culture du maïs que celle des autres produits. En effet, 40,84% des ménages agricoles produit du maïs contre 40,37% pour le sorgho et 35,49% pour Niébé (haricot).
+
+```{r, out.width="70%", fig.align="center", fig.cap="Top 10 produits par part des ménages producteurs", fig.pos="H"}
+include_graphics("sorties/Sorties_module_1/top10_part_producteurs.png")
+```
+
+## II.2 Un pilier de la consommation alimentaire
+
+L'analyse de la consommation (Section 7B) confirme le rôle crucial du maïs dans l'alimentation des ménages burkinabè. Le graphique ci-dessous indique que le maïs occupe la deuxième place en termes de part totale des quantités consommées, avec 24,5% de la consommation totale rapportée. Le coton affiche une part plus élevée (42,71%).
+
+```{r, out.width="70%", fig.align="center", fig.cap="Top 10 produits consommés (en kg)"}
+include_graphics("sorties/Sorties_preambule/top10_produits_consommes_kg.png")
+```
+
+De plus, l'apport calorique du maïs représente 26,08% des calories consommées par les ménages, une part non négligeable.
+
+## II.3 Une double nature : subsistance et commercialisation
+
+Une des forces du maïs réside dans sa double vocation. Il est à la fois une culture de subsistance, assurant l'autoconsommation des ménages, et une culture commerciale, source de revenus monétaires. Cette caractéristique est cruciale pour comprendre son impact sur la sécurité alimentaire des ménages, en particulier dans un contexte sahélien marqué par une forte variabilité climatique et des marchés agricoles encore imparfaits (Barrett, 2008).
+
+-   **Importance de l'autoconsommation** : Le ci-dessous montre que 42,79% du maïs consommé par les ménages provient de leur propre production. Ce taux élevé d'autoconsommation est un indicateur clé de son rôle de "matelas de sécurité" pour les ménages ruraux, les protégeant des fluctuations des prix du marché et assurant une partie de leurs besoins alimentaires de base.
+
+-   **Poids dans l'économie rurale** : Parallèlement, le maïs est un produit commercialisé. Le graphique ci-dessous indique qu'il représente 7% de la valeur totale des ventes agricoles. Bien que ce pourcentage puisse paraître modeste, il concerne une très large part des superficies cultivées, suggérant que même les ménages les plus modestes participent à la commercialisation du maïs.
+
+## II. 4 Confrontation avec les données de la FAO
+
+Ces résultats empiriques peuvent être mis en perspective avec les données secondaires disponibles :
+
+-   Selon la base de données de la FAO, le Burkina Faso a connu une augmentation significative de sa production de maïs au cours des dernières décennies, traduisant à la fois l'expansion des superficies et l'amélioration des rendements.
+
+-   Le Burkina Faso est généralement autosuffisant en maïs, voire exportateur vers les pays côtiers lors des bonnes années, ce qui renforce son rôle stratégique dans la sécurité alimentaire régionale. La valeur des exportation en 2021 est évaluée à 2,152 millions de dollars contre une valeur de 0,393 millions de dollars pour les importations.
+
+## II.5 Justification du choix de la filière du maïs
+
+Ainsi, le choix du maïs comme produit d'étude pour le Burkina Faso est pleinement justifié par les critères définis dans le projet :
+
+\begingroup
+\renewcommand{\arraystretch}{1.3}
+
+| Critère | Indicateur | Valeur |
+|-----------------------|----------------------------|---------------------|
+| **Importance pour la sécurité alimentaire** | Part dans les quantités consommées (S7B) | **24,5%** (1er produit vivrier) |
+| **Poids dans la production agricole** | Part des superficies cultivées (S16C) | **76,91%** (1er rang) |
+| **Rôle économique** | Taux d'autoconsommation (S7B) + Part des ventes (S16D) | **42,79%** + **7%** |
+
+\endgroup
+
+\newpage
+
+# Chapitre III : Profilage des ménages producteurs de maïs au Burkina Faso
+
+L'objectif de ce module est de caractériser les ménages selon leur niveau de participation à la filière maïs. Conformément aux recommandations du projet, les ménages ont été classés en quatre catégories à partir des sections **S16C** (production agricole) et **S07B** (consommation alimentaire) de l'EHCVM :
+
+-   **Producteurs-consommateurs** : ménages produisant et consommant du maïs ;
+
+-   **Producteurs seuls** : ménages produisant du maïs sans en déclarer la consommation ;
+
+-   **Consommateurs seuls** : ménages consommant du maïs sans en produire ;
+
+-   **Ni producteurs ni consommateurs** : ménages ne participant ni à la production ni à la consommation du maïs.
+
+Pour chacun de ces groupes, plusieurs indicateurs ont été calculés à l'aide des poids d'enquête (*hhweight*) afin d'obtenir des estimations représentatives au niveau national : caractéristiques sociodémographiques du chef de ménage, incidence de la pauvreté monétaire, score FIES, prévalence de l'insécurité alimentaire modérée et sévère ainsi que le score de diversité alimentaire (HDDS).
+
+## III.1 Répartition des ménages
+
+La typologie met en évidence une forte implication des ménages dans la consommation du maïs.
+
+La catégorie la plus importante est celle des consommateurs seuls, qui représente 33,8 % des ménages au niveau national. Elle est suivie de très près par les producteurs-consommateurs (32,7 %). Les ménages ne produisant ni ne consommant du maïs représentent 25,3 % de l'ensemble des ménages, tandis que les producteurs exclusifs ne constituent que 8,2 %.
+
+Cette répartition suggère que le maïs est avant tout un produit largement consommé dans le pays, mais que seule une fraction relativement limitée des ménages le produit sans en déclarer la consommation. À l'inverse, près d'un tiers des ménages combine production et consommation, ce qui traduit le rôle du maïs comme culture vivrière destinée en partie à l'autoconsommation.
+
+## III.2 Profil sociodémographique des groupes
+
+Les caractéristiques des quatre groupes mettent en évidence des différences importantes.
+
+Les producteurs-consommateurs sont dirigés par les chefs de ménage les plus âgés (47,3 ans) et possèdent une taille moyenne de ménage relativement élevée (7,5 personnes). Les producteurs seuls présentent la taille moyenne la plus importante (8,2 personnes), traduisant probablement un besoin accru de main-d'œuvre familiale pour les activités agricoles.
+
+À l'opposé, les consommateurs seuls et les ménages ni producteurs ni consommateurs sont plus petits (environ 6 personnes en moyenne). Ils comptent également une proportion plus élevée de femmes chefs de ménage (respectivement 18,7 % et 17,0 %, contre moins de 10 % chez les ménages producteurs).
+
+Ces résultats suggèrent que les ménages impliqués dans la production du maïs correspondent davantage à des exploitations familiales rurales, tandis que les consommateurs exclusifs présentent un profil plus urbain ou moins agricole.
+
+## III.3 Pauvreté monétaire
+
+L'analyse de l'incidence de la pauvreté révèle des écarts marqués entre les groupes (Figure 5).
+
+Les producteurs seuls enregistrent le taux de pauvreté le plus élevé (50,5 %), suivis des ménages ni producteurs ni consommateurs (47,9 %). Les producteurs-consommateurs présentent une incidence plus faible (39,1 %), tandis que les consommateurs seuls affichent la situation la plus favorable (17,5 %).
+
+Ces résultats suggèrent que le fait de produire du maïs sans le consommer n'est pas associé à un meilleur niveau de vie. Au contraire, cette catégorie apparaît particulièrement vulnérable. À l'inverse, les ménages consommant du maïs sans en produire sont nettement moins touchés par la pauvreté.
+
+## III.4 Insécurité alimentaire
+
+L'insécurité alimentaire est analysée à travers les indicateurs FIES.
+
+Les producteurs seuls présentent la proportion la plus élevée de ménages en situation d'insécurité alimentaire modérée (58,5 %) ainsi qu'une prévalence importante de l'insécurité sévère (21,4 %).
+
+Les ménages producteurs-consommateurs connaissent une situation légèrement plus favorable, avec 49,7 % d'insécurité modérée et 17,9 % d'insécurité sévère.
+
+Les ménages ni producteurs ni consommateurs enregistrent paradoxalement la plus forte prévalence d'insécurité alimentaire modérée (61,1 %), même si leur niveau d'insécurité sévère reste relativement limité (27,3 %).
+
+Enfin, les consommateurs seuls apparaissent comme le groupe le moins exposé à l'insécurité alimentaire, avec 42,9 % d'insécurité modérée et seulement 13,7 % d'insécurité sévère.
+
+Ces résultats montrent que la participation à la production du maïs ne garantit pas automatiquement une meilleure sécurité alimentaire. Les producteurs exclusifs demeurent particulièrement vulnérables, ce qui peut refléter une faible productivité, une commercialisation insuffisamment rémunératrice ou encore une production essentiellement destinée à la vente plutôt qu'à l'autoconsommation.
+
+```{r, out.width="70%", fig.align="center", fig.cap="Profil des ménages selon leur relation avec le Maïs"}
+include_graphics("sorties/Sorties_module_2/profil_groupes.png")
+```
+
+## III.5 Synthèse des résultats
+
+Les consommateurs seuls apparaissent comme le groupe le plus favorisé, combinant le plus faible taux de pauvreté et les niveaux les plus faibles d'insécurité alimentaire. À l'opposé, les producteurs seuls cumulent une forte pauvreté monétaire et une insécurité alimentaire importante, révélant une situation de vulnérabilité malgré leur participation à la production agricole.
+
+Les producteurs-consommateurs occupent une position intermédiaire : leur niveau de pauvreté est inférieur à celui des producteurs exclusifs, ce qui laisse penser que l'autoconsommation constitue un mécanisme de protection partielle contre les chocs alimentaires.
+
+Enfin, les ménages ni producteurs ni consommateurs présentent un niveau élevé d'insécurité alimentaire, ce qui souligne que l'absence de participation à la filière maïs est également associée à une forte vulnérabilité.
+
+Dans l'ensemble, ces résultats montrent que la simple participation à la production du maïs ne suffit pas à améliorer les conditions de vie des ménages. La sécurité alimentaire dépend vraisemblablement d'autres facteurs, notamment la productivité agricole, les revenus tirés de la commercialisation, la diversification des sources de revenus ainsi que l'accès aux marchés. Ces dimensions seront approfondies dans les modules suivants consacrés aux rendements agricoles, à la commercialisation et à l'analyse de l'impact de la filière sur la sécurité alimentaire.
+
+\newpage
+
+# Chapitre IV : Production et rendements du maïs au Burkina Faso
+
+## IV.1 Méthodologie
+
+L'analyse de la production du maïs repose sur les modules agricoles S16A, S16B, S16C et S16D de l'EHCVM 2021. La superficie cultivée en maïs est obtenue en combinant la superficie des parcelles avec la proportion effectivement consacrée au maïs. Les différentes unités de mesure locales ont ensuite été converties en kilogrammes à l'aide de la table nationale de conversion utilisée lors de la phase 2 de l'enquête.
+
+Deux situations sont distinguées :
+
+-   **les ménages ayant terminé leur récolte**, pour lesquels la production est reconstituée en additionnant les quantités autoconsommées, données, vendues et stockées ;
+
+-   **les ménages dont la récolte était encore en cours**, pour lesquels l'estimation totale de production renseignée directement dans le questionnaire est utilisée.
+
+Les rendements sont ensuite calculés comme le rapport entre la production estimée et la superficie cultivée. Afin d'améliorer la qualité des estimations, plusieurs traitements ont été appliqués : exclusion des micro-parcelles (\< 0,05 ha), plafonnement des surfaces à 20 hectares, élimination des rendements supérieurs à 5 000 kg/ha et suppression des valeurs extrêmes par winsorisation (1er et 99e percentiles).
+
+Enfin, une régression pondérée avec effets fixes de grappe est estimée afin d'identifier les principaux facteurs associés aux rendements du maïs. Les variables explicatives retenues sont la valeur des intrants agricoles, l'utilisation de semences améliorées, l'irrigation ainsi que le niveau d'instruction du chef de ménage.
+
+## IV.2 Production nationale de maïs
+
+Après l'ensemble des traitements, 2 015 ménages producteurs de maïs disposent d'informations exploitables sur la production. Parmi eux, 1 967 ménages (97,6 %) proviennent de la branche « récolte terminée » tandis que 48 ménages (2,4 %) sont issus de la branche « récolte en cours ».
+
+Après le filtrage agronomique destiné à éliminer les observations aberrantes, l'échantillon final comprend 1 846 ménages, soit près de 92 % des producteurs initialement retenus.
+
+Les estimations pondérées conduisent à une superficie nationale cultivée en maïs d'environ 1,18 million d'hectares. Le rendement moyen national est estimé à 748 kg/ha, tandis que le rendement médian est calculé directement à partir des observations individuelles.
+
+La comparaison avec la référence FAOSTAT (1 521 kg/ha) fait apparaître un écart de -50,8 %.
+
+Cet écart ne traduit pas nécessairement une erreur de calcul mais résulte principalement des caractéristiques de l'enquête :
+
+-   une partie importante des ménages ne possède pas suffisamment d'informations convertibles en kilogrammes ;
+
+-   certaines unités locales ne disposent pas d'équivalent dans la table nationale de conversion ;
+
+-   les quantités stockées ou autoconsommées correspondent à la situation observée au moment de l'enquête et non à la fin de la campagne agricole ;
+
+-   enfin, les statistiques administratives de FAOSTAT correspondent à une estimation théorique de la production nationale, tandis que l'EHCVM mesure les quantités effectivement déclarées par les ménages.
+
+Les rendements obtenus sont ainsi particulièrement adaptés aux comparaisons entre ménages, régions ou pratiques agricoles, mais tendent à sous-estimer le niveau absolu de production.
+
+## IV.3 Production selon la source d'information
+
+La quasi-totalité de la production reconstituée provient des ménages ayant achevé leur récolte. Les observations issues des ménages dont la récolte était encore en cours représentent une faible part de l'échantillon final (42 observations après filtrage).
+
+Cette forte prédominance de la branche « récolte terminée » renforce la robustesse des estimations puisque celles-ci reposent principalement sur des quantités effectivement observées plutôt que sur des estimations déclaratives.
+
+Le graphique ci-dessous illustre cette différence de contribution entre les deux sources de données.
+
+```{r, out.width="70%", fig.align="center", fig.cap="Production estimée par source"}
+include_graphics("sorties/Sorties_module_3/production_mais.png")
+```
+
+## IV.4 Analyse des pertes de production
+
+L'analyse des pertes montre que la quasi-totalité des producteurs déclare avoir récolté au moins une partie de leur production.
+
+Le pourcentage moyen de pertes déclaré est de 0,94 %, ce qui demeure relativement faible à l'échelle nationale.
+
+Aucun ménage ne déclare une perte totale de la récolte de maïs.
+
+## IV.5 Utilisation des intrants agricoles
+
+L'analyse des intrants porte sur les ménages producteurs de maïs. Il convient toutefois de rappeler que les informations du module S16B sont collectées au niveau du ménage et non au niveau de chaque culture ; elles décrivent donc l'ensemble des intrants utilisés par le ménage agricole.
+
+Les intrants les plus fréquemment utilisés sont :
+
+-   les semences de maïs ;
+
+-   les engrais minéraux ;
+
+-   les produits phytosanitaires.
+
+Les dépenses les plus importantes concernent les engrais minéraux, suivis des produits phytosanitaires.
+
+Le graphique ci-dessous présente la fréquence d'utilisation des différents intrants.
+
+```{r, out.width="70%", fig.align="center", fig.cap="Utilisation des intrants chez les producteurs de maïs"}
+include_graphics("sorties/Sorties_module_3/intrants_producteurs_mais.png")
+```
+
+## IV.6 Déterminants des rendements
+
+Une régression linéaire pondérée avec effets fixes de grappe est estimée afin d'expliquer les différences de rendement entre producteurs.
+
+Les résultats montrent que :
+
+la valeur des intrants présente un effet positif mais non significatif sur les rendements lorsque les effets fixes sont pris en compte ; l'utilisation de semences améliorées présente un coefficient négatif (-0,224) et est quand même significative ; l'irrigation exerce un effet positif mais statistiquement non significatif ; le niveau d'instruction du chef de ménage est positivement et significativement associé au rendement.
+
+L'introduction des effets fixes de grappe augmente fortement le pouvoir explicatif du modèle (R² = 0,376), ce qui souligne l'importance des facteurs locaux (conditions agroécologiques, qualité des sols, climat, infrastructures ou pratiques agricoles) dans les écarts de productivité.
+
+La comparaison avec le modèle sans effets fixes montre notamment que l'effet positif des dépenses en intrants disparaît après prise en compte de l'hétérogénéité spatiale, ce qui suggère qu'une partie de cet effet reflète en réalité des différences de contexte de production plutôt qu'un impact direct des intrants eux-mêmes.
+
+## IV.7 Répartition spatiale des rendements
+
+La cartographie des rendements met en évidence une forte hétérogénéité spatiale entre les grappes d'enquête.
+
+Sur les 369 grappes contenant des producteurs de maïs, 365 disposent de coordonnées géographiques exploitables.
+
+Les différences observées traduisent probablement l'influence combinée des conditions climatiques, de la fertilité des sols, des pratiques culturales ainsi que de l'accès aux intrants agricoles.
+
+La carte permet d'identifier plusieurs zones présentant des rendements particulièrement élevés tandis que d'autres affichent une productivité sensiblement plus faible.
+
+```{r, out.width="70%", fig.align="center", fig.cap="Rendement moyen du maïs par grappe"}
+include_graphics("sorties/Sorties_module_3/carte_rendement_mais.png")
+```
+
+## IV.8 Influence de la pluviométrie
+
+Afin d'étudier le rôle des conditions climatiques, les données de précipitations journalières de NASA POWER ont été associées aux grappes de l'enquête. La pluviométrie cumulée entre mai et octobre 2021 a été calculée pour chaque grappe.
+
+Le nuage de points met en évidence une relation croissante entre la pluviométrie et les rendements.
+
+Le modèle de régression pondéré confirme cette relation :
+
+chaque millimètre supplémentaire de pluie est associé à une augmentation moyenne d'environ 0,66 kg/ha du rendement ; cet effet est hautement significatif (p \< 0,001).
+
+En revanche, la pluviométrie n'explique qu'une partie limitée des différences de rendement (R² = 9,7 %), ce qui indique que d'autres facteurs (tels que la qualité des sols, les pratiques culturales, l'accès aux intrants ou les caractéristiques socio-économiques des ménages) jouent également un rôle déterminant dans la productivité du maïs.
+
+```{r, out.width="70%", fig.align="center", fig.cap="Rendement du maïs vs pluviométrie cumulée"}
+include_graphics("sorties/Sorties_module_3/rendement_vs_pluie.png")
+```
+
+\newpage
+
+# Chapitre V : Commercialisation et prix du maïs au Burkina Faso
+
+Ce module analyse la commercialisation du maïs au Sénégal en distinguant les aspects liés aux producteurs (vente, prix, stockage et pertes post-récolte) et ceux liés aux consommateurs (prix d'achat et autoconsommation). Une analyse spatiale des prix ainsi qu'une estimation des marges commerciales régionales complètent l'étude.
+
+## V.1 Commercialisation du maïs par les producteurs
+
+**Prix producteur**
+
+Le prix producteur a été calculé conformément aux recommandations du sujet, comme le rapport entre le montant total de la vente et la quantité vendue, après conversion des quantités en kilogrammes à l'aide des coefficients du NSU.
+
+Les résultats montrent que :
+
+-   le **prix producteur moyen pondéré** est de **414 FCFA/kg** ;
+
+-   le **prix médian** est de **362 FCFA/kg**.
+
+L'écart entre la moyenne et la médiane suggère l'existence de quelques transactions réalisées à des prix relativement élevés, qui tirent la moyenne vers le haut.
+
+**Taux de commercialisation**
+
+Le taux de commercialisation a été calculé selon la formule :
+
+$$
+\text{Taux de commercialisation} =
+\frac{\text{Quantité vendue}}
+{\text{Autoconsommation} + \text{Dons} + \text{Ventes} + \text{Stock}}
+$$
+
+où la production totale correspond à la somme des quantités autoconsommées, données, vendues et stockées.
+
+Au niveau national :
+
+-   le **taux moyen pondéré** est de **5 %** ;
+
+-   le **taux médian est nul (0 %)**.
+
+Ces résultats indiquent qu'une grande partie des producteurs ne vend pas ou vend très peu de sa production. Le maïs apparaît ainsi principalement comme une culture destinée à l'autoconsommation ou au stockage plutôt qu'au marché.
+
+## V.2 Taux de commercialisation
+
+L'analyse des acheteurs met en évidence une forte concentration des ventes sur les marchés traditionnels.
+
+La répartition des ventes est la suivante :
+
+-   **Marché : 67,0 %**
+
+-   **Ménages/particuliers : 30,2 %**
+
+-   **Opérateurs privés : 1,9 %**
+
+-   **Coopératives : 0,9 %**
+
+Les marchés constituent donc de loin le principal canal de commercialisation du maïs, tandis que les coopératives et les opérateurs privés occupent une place très limitée.
+
+## V.3 Méthode de stockage
+
+Les producteurs utilisent plusieurs modes de stockage après la récolte.
+
+Les principales méthodes observées sont :
+
+-   **Magasin : 37,8 %**
+
+-   **Grenier dans la concession : 29,1 %**
+
+-   **Autres méthodes : 14,0 %**
+
+-   **Hangar : 8,2 %**
+
+-   **Grenier en dehors de la concession : 6,9 %**
+
+-   **Toit de la maison : 1,7 %**
+
+Les magasins et les greniers traditionnels représentent ainsi plus des deux tiers des méthodes de stockage utilisées, traduisant l'importance des infrastructures de conservation dans les exploitations agricoles.
+
+## V.4 Causes de pertes post-récolte
+
+Les pertes de récolte ont été analysées à partir des informations collectées sur les producteurs.
+
+Les principales causes identifiées sont :
+
+-   **Sécheresse : 10 637 cas pondérés**
+
+-   **Autres causes : 9 916 cas**
+
+-   **Manque de main-d'œuvre : 8 256 cas**
+
+-   **Animaux : 1 131 cas**
+
+-   **Insectes : 196 cas**
+
+La sécheresse apparaît comme la principale cause des pertes de récolte, suivie par le manque de main-d'œuvre. Les dégâts causés par les insectes restent relativement faibles dans les données observées.
+
+```{r, out.width="75%", fig.align="center", fig.cap="Cause des pertes de récolte du maïs"}
+include_graphics("sorties/Sorties_module_4/graph_pertes_par_cause.png")
+```
+
+## V.5 Prix à la consommation
+
+Du côté des ménages consommateurs, le prix à la consommation a été obtenu en rapportant la valeur de l'achat à la quantité achetée, après conversion des unités locales en kilogrammes.
+
+Les résultats montrent :
+
+-   un **prix moyen pondéré de 1 066 FCFA/kg** ;
+
+-   un **prix médian de 750 FCFA/kg**.
+
+Le prix payé par les consommateurs est donc largement supérieur au prix reçu par les producteurs, ce qui traduit l'existence de coûts de commercialisation, de transport, de stockage et de marges tout au long de la chaîne de valeur.
+
+## V.6 Part dans l'autconsommation
+
+La part de l'autoconsommation a été calculée comme le rapport entre la quantité autoconsommée et la quantité totale consommée.
+
+Au niveau national, cette part atteint **15 %**.
+
+Autrement dit, environ **15 % du maïs consommé par les ménages provient directement de leur propre production**, tandis que la majorité est obtenue par achat ou par d'autres modes d'approvisionnement.
+
+## V.7 Analyse spatiale du prix
+
+Une interpolation spatiale par la méthode IDW (Inverse Distance Weighting) a été réalisée à partir des prix producteurs observés dans les grappes disposant de coordonnées GPS.
+
+Cette approche permet de représenter les gradients spatiaux des prix et de mettre en évidence les zones où les prix producteurs sont relativement élevés ou faibles, offrant ainsi un outil d'aide à la décision pour les politiques agricoles et les interventions sur les marchés.
+
+## V.8 Marges commerciales régionales
+
+La marge commerciale approchée a été estimée comme la différence entre le prix moyen à la consommation et le prix moyen au producteur.
+
+Les plus fortes marges sont observées dans les régions du Centre, Centre-Nord et de l'Est.
+
+À l'inverse, les régions Boucle de Mouhoun et du Sud-Ouest présentent des marges négatives, ce qui peut s'expliquer par la faible disponibilité d'observations ou par des différences de structure des marchés entre producteurs et consommateurs.
+
+```{r, out.width="75%", fig.align="center", fig.cap="Marge commerciale du maïs par région"}
+include_graphics("sorties/Sorties_module_4/graph_marge_region.png")
+```
+
+## V.9 Synthèse du module quatre
+
+L'analyse met en évidence une faible commercialisation du maïs, avec seulement 5 % de la production écoulée en moyenne, confirmant le rôle important de cette culture dans l'autoconsommation des ménages agricoles. Les marchés constituent le principal canal de vente, tandis que les magasins et les greniers demeurent les principaux moyens de stockage.
+
+Par ailleurs, la sécheresse apparaît comme la première cause des pertes post-récolte. Les prix à la consommation (1 066 FCFA/kg) sont nettement supérieurs aux prix producteurs (414 FCFA/kg), ce qui se traduit par des marges commerciales importantes dans plusieurs régions. Ces résultats suggèrent que des investissements dans les infrastructures de stockage, la réduction des pertes post-récolte et l'amélioration des circuits de commercialisation pourraient contribuer à accroître les revenus des producteurs et à améliorer l'efficacité de la filière maïs.
+
+Par ailleurs, la sécheresse apparaît comme la première cause des pertes post-récolte. Les prix à la consommation (1 066 FCFA/kg) sont nettement supérieurs aux prix producteurs (414 FCFA/kg), ce qui se traduit par des marges commerciales importantes dans plusieurs régions. Ces résultats suggèrent que des investissements dans les infrastructures de stockage, la réduction des pertes post-récolte et l'amélioration des circuits de commercialisation pourraient contribuer à accroître les revenus des producteurs et à améliorer l'efficacité de la filière maïs.
+
+\newpage
+
+# Chapitre VI : Impact de la filière sur la sécurité alimentaire
+
+Ce chapitre présente les résultats de l'analyse économétrique visant à tester l'effet de la participation à la filière maïs sur la sécurité alimentaire des ménages au Burkina Faso. Conformément au cadre méthodologique défini dans le projet (Module 5), nous mobilisons deux indicateurs complémentaires de la sécurité alimentaire (le score FIES et le score HDDS) et testons l'hétérogénéité spatiale de ces effets via des interactions avec des variables du questionnaire communautaire.
+
+## VI.1 Spécification économétrique et variables
+
+### V.1.1 Modèle de base
+
+Nous estimons la relation suivante par régression linéaire avec erreurs robustes et pondération par les poids d'enquête (`hhweight`) :
+
+$$
+\text{FIES}_i = \alpha + \beta_1 \text{Producteur\_maïs}_i + \beta_2 \ln(\text{Revenu\_vente\_maïs}_i) + \beta_3 \text{Taux\_commercialisation}_i + X_i'\gamma + \varepsilon_i
+$$
+
+Où :
+
+\- $\text{FIES}_i$ : score d'insécurité alimentaire du ménage $i$ (0 à 8, ↑ = pire)
+
+\- $\text{Producteur\_maïs}_i$ : = 1 si le ménage cultive du maïs, 0 sinon - $\ln(\text{Revenu\_vente\_maïs}_i)$ : logarithme du revenu des ventes de maïs
+
+\- $\text{Taux\_commercialisation}_i$ : quantités vendues / quantités totales produites
+
+\- $\text{Taille\_ménage}_i$ : nombre de personnes dans le ménage
+
+\- $\text{Chef\_scolarisé}_i$ : = 1 si le chef de ménage a été scolarisé
+
+\- $\text{Possède\_terres}_i$ : = 1 si le ménage possède des terres agricoles
+
+\- $\varepsilon_i$ : terme d'erreur
+
+En complément, nous estimons le même modèle en utilisant le **score HDDS** (Household Dietary Diversity Score, 0 à 12, plus élevé = meilleure diversité alimentaire) comme variable dépendante alternative, afin de tester la robustesse des résultats.
+
+### VI.1.2 Modèle d'hétérogénéité spatiale
+
+Pour tester si les effets de la filière varient selon les conditions locales, nous introduisons des termes d'interaction entre les variables de participation à la filière et des caractéristiques communautaires issues du questionnaire communautaire (QC) :
+
+-   **Interaction coopérative** : `Taux de commercialisation × Coopérative_présente` : teste si l'effet de la vente du maïs sur la sécurité alimentaire diffère dans les villages disposant d'une coopérative agricole.
+
+-   **Interaction irrigation** : `Producteur_maïs × Irrigation_pratiquée` : teste si l'effet d'être producteur de maïs sur la sécurité alimentaire diffère dans les villages pratiquant l'irrigation.
+
+## VI.2 Résultats du modèle de base
+
+Le graphique ci-dessous présente les coefficients estimés pour les deux modèles (FIES et HDDS), avec leurs intervalles de confiance à 95%.
+
+```{r, out.width="75%", fig.align="center", fig.cap="Déterminants du score FIES, coefficients et IC 95 %"}
+include_graphics("sorties/Sorties_module_5/coefficients_m5_fies_hdds.png")
+```
+
+Les résultats montrent tout d’abord que le simple fait d’être producteur de maïs n’est pas associé de manière statistiquement significative à une amélioration de la sécurité alimentaire. Le coefficient associé à la variable « producteur de maïs » est légèrement négatif dans le modèle FIES, ce qui suggère une tendance à une réduction de l’insécurité alimentaire, mais l’intervalle de confiance englobe la valeur zéro. De même, l’effet sur la diversité alimentaire mesurée par le HDDS est légèrement positif mais reste statistiquement incertain. Ainsi, la production de maïs en elle-même ne semble pas constituer une garantie suffisante d’amélioration des conditions alimentaires des ménages. Cette absence d’effet significatif peut s’expliquer par le fait que la production agricole dépend fortement des rendements, de l’accès aux intrants, de la taille des exploitations ou encore de la capacité des ménages à valoriser économiquement leur production.
+
+En revanche, la commercialisation du maïs apparaît comme un déterminant important de la sécurité alimentaire. Le taux de commercialisation présente un coefficient négatif et statistiquement significatif dans le modèle FIES. Cela signifie qu’une augmentation de la part de la production vendue est associée à une diminution du score d’insécurité alimentaire, donc à une amélioration de la situation alimentaire des ménages. Ce résultat suggère que l’intégration au marché joue un rôle central dans la transformation de la production agricole en bien-être alimentaire. En effet, la vente du surplus de production permet aux ménages d’obtenir des revenus monétaires susceptibles d’être utilisés pour acheter une alimentation plus diversifiée, particulièrement durant les périodes où les stocks alimentaires diminuent.
+
+Concernant la diversité alimentaire, le taux de commercialisation du maïs présente également un effet positif, mais celui-ci n’est pas statistiquement significatif. Cela indique que la commercialisation pourrait favoriser une amélioration de la diversité alimentaire, mais que l’ampleur de cet effet reste insuffisamment précise dans l’échantillon étudié. Plusieurs facteurs peuvent expliquer ce résultat : les revenus tirés des ventes peuvent être affectés à d’autres dépenses (intrants agricoles, santé, éducation, remboursement de dettes), ou encore les ménages peuvent privilégier l’autoconsommation pour assurer leur sécurité alimentaire.
+
+Le revenu issu de la vente du maïs présente également un effet conforme aux attentes économiques. Dans le modèle FIES, l’augmentation du revenu tiré du maïs est associée à une diminution de l’insécurité alimentaire, même si l’effet apparaît relativement faible. Cette relation traduit le rôle protecteur du revenu agricole : des ressources financières plus importantes permettent aux ménages d’accéder plus facilement aux marchés alimentaires et de mieux faire face aux périodes de vulnérabilité. Toutefois, l’effet limité sur le HDDS indique que l’augmentation du revenu ne se traduit pas nécessairement automatiquement par une diversification alimentaire accrue. Les revenus agricoles peuvent en effet être mobilisés pour des investissements productifs ou des dépenses non alimentaires.
+
+L’un des résultats les plus robustes concerne le niveau d’éducation du chef de ménage. La scolarisation du chef de ménage est associée à une réduction significative du score FIES et à une augmentation significative du score HDDS. Autrement dit, les ménages dirigés par une personne scolarisée présentent à la fois une probabilité plus faible d’insécurité alimentaire et une alimentation plus diversifiée. Ce résultat souligne l’importance du capital humain dans les stratégies de résilience alimentaire. L’éducation peut favoriser l’adoption de meilleures pratiques agricoles, faciliter l’accès à l’information, améliorer la gestion des ressources du ménage et permettre une diversification des sources de revenus.
+
+La taille du ménage présente quant à elle des effets faibles et non significatifs dans les deux modèles. Bien que les grands ménages disposent potentiellement d’une main-d’œuvre agricole plus importante, ils doivent également répondre à des besoins alimentaires plus élevés. Ces deux mécanismes opposés pourraient expliquer l’absence d’un effet net clairement identifié.
+
+Enfin, la possession de terres agricoles ne semble pas avoir d’effet significatif sur les indicateurs de sécurité alimentaire. Ce résultat montre que l’accès à la terre, bien qu’étant une condition nécessaire à l’activité agricole, n’est pas suffisant pour garantir une meilleure situation alimentaire. La terre ne produit des effets économiques et alimentaires positifs que lorsqu’elle est combinée à d’autres facteurs tels que l’accès aux intrants, aux équipements, aux marchés, au financement ou aux services de conseil agricole.
+
+Dans l’ensemble, les résultats mettent en évidence un enseignement majeur : la sécurité alimentaire des ménages de la filière maïs dépend moins du simple statut de producteur que de leur capacité à transformer leur production en ressources économiques et à disposer de facteurs structurels favorables, notamment l’éducation. La commercialisation apparaît ainsi comme un levier essentiel d’amélioration de la sécurité alimentaire, tandis que le renforcement du capital humain constitue un facteur complémentaire indispensable. Ces résultats suggèrent que les politiques agricoles ne devraient pas uniquement chercher à accroître la production de maïs, mais également à améliorer l’accès aux marchés, renforcer les capacités des producteurs et développer les services favorisant la valorisation économique de la production.
+
+## VI.3 Résultats des modèles d'hétérogénéité spatiale
+
+Le graphique ci-dessous présente les résultats des deux modèles d'interaction, avec la variable dépendante FIES. Nous interprétons ici la direction et la significativité des effets d'interaction observés.
+
+```{r, out.width="75%", fig.align="center", fig.cap="Hétérogénéité spatiale de l'effet de la filière du maïs sur le score FIES"}
+include_graphics("sorties/Sorties_module_5/coefficients_m5_heterogeneite.png")
+```
+
+### VI.3.1 Effet de la présence d'une coopérative
+
+Le graphique de gauche examine si la présence d'une coopérative modifie l'effet du taux de commercialisation du maïs sur le score FIES. Le coefficient associé au taux de commercialisation est négatif, ce qui signifie qu'une augmentation de la part de la production vendue est associée à une diminution du score FIES, donc à une amélioration de la sécurité alimentaire. Ce résultat est cohérent avec l'idée que la commercialisation permet aux ménages de générer des revenus monétaires susceptibles d'améliorer leur accès à l'alimentation.
+
+Le terme d'interaction *« Taux de vente × Coopérative »* est, en revanche, positif. Cela indique que l'effet bénéfique de la commercialisation tend à être moins important dans les villages où une coopérative est présente. Toutefois, l'intervalle de confiance recouvre la valeur nulle, ce qui signifie que cette différence n'est pas statistiquement significative. On ne peut donc pas conclure que la présence d'une coopérative modifie effectivement la relation entre la commercialisation du maïs et la sécurité alimentaire.
+
+Les autres variables du modèle présentent des résultats similaires à ceux observés dans les régressions précédentes. La scolarisation du chef de ménage est associée à une diminution du score FIES, traduisant une meilleure sécurité alimentaire. La présence d'une coopérative dans le village présente un coefficient positif mais faible et non significatif, ce qui suggère qu'en moyenne, indépendamment de la commercialisation, les ménages vivant dans un village disposant d'une coopérative ne présentent pas une situation alimentaire significativement différente des autres ménages.
+
+### VI.3.2 Effet de la pratique de l'irrigation
+
+Le graphique de droite étudie si les bénéfices liés au fait d'être producteur de maïs diffèrent selon que le village pratique ou non l'irrigation. Le terme d'interaction « Producteur × Irrigation » est très proche de zéro et son intervalle de confiance englobe largement la valeur nulle. Ce résultat montre que l'effet du statut de producteur de maïs sur le score FIES ne diffère pas significativement entre les villages pratiquant l'irrigation et ceux qui ne la pratiquent pas.
+
+L'effet principal de l'irrigation est légèrement positif, mais reste lui aussi non significatif. Autrement dit, la présence d'un système d'irrigation au niveau du village n'est pas associée, dans ce modèle, à une amélioration significative de la sécurité alimentaire des ménages.
+
+En revanche, le taux de commercialisation conserve un coefficient négatif relativement important, confirmant une nouvelle fois que les ménages qui commercialisent davantage leur production de maïs tendent à présenter un niveau d'insécurité alimentaire plus faible. Comme dans les modèles précédents, la scolarisation du chef de ménage demeure l'un des facteurs les plus fortement associés à une amélioration de la sécurité alimentaire.
+
+### VI.4 Enseignements généraux
+
+Dans l'ensemble, ces résultats montrent que les effets positifs de la filière maïs sur la sécurité alimentaire ne semblent pas varier significativement selon la présence d'une coopérative ou d'un système d'irrigation au niveau du village. Les coefficients des interactions ne sont pas statistiquement différents de zéro, ce qui suggère que les bénéfices de la production ou de la commercialisation du maïs sont relativement homogènes dans les différents contextes étudiés.
+
+En revanche, les résultats confirment le rôle central de la commercialisation. Les ménages qui vendent une plus grande part de leur production présentent systématiquement un niveau d'insécurité alimentaire plus faible. De même, l'éducation du chef de ménage apparaît comme un déterminant robuste de la sécurité alimentaire, indépendamment des caractéristiques locales. Ces résultats suggèrent que les politiques publiques visant à améliorer la sécurité alimentaire devraient prioritairement favoriser l'accès aux marchés, renforcer les capacités des producteurs et investir dans le capital humain, plutôt que de compter uniquement sur la présence de coopératives ou d'infrastructures d'irrigation.
+
+\newpage
+
+# Chapitre VII : Discussion et implications
+
+Les résultats obtenus mettent en évidence la complexité des déterminants de la productivité du maïs au Burkina Faso. Si l'analyse descriptive montre une forte utilisation des engrais minéraux, des produits phytosanitaires et des semences de maïs par les producteurs, les estimations économétriques indiquent que ces facteurs ne se traduisent pas systématiquement par une augmentation significative des rendements une fois prises en compte les caractéristiques propres aux différentes grappes d'enquête.
+
+En particulier, la valeur des intrants agricoles présente un effet positif mais non statistiquement significatif dans le modèle à effets fixes. Ce résultat suggère que les différences de rendement observées entre producteurs s'expliquent davantage par les caractéristiques locales (qualité des sols, conditions agroclimatiques, infrastructures ou pratiques culturales) que par le seul niveau des dépenses en intrants. La disparition de l'effet significatif des intrants après introduction des effets fixes confirme l'importance de cette hétérogénéité spatiale.
+
+De manière plus surprenante, l'utilisation de semences améliorées est associée à un coefficient négatif, bien que faiblement significatif. Ce résultat ne signifie pas nécessairement que ces semences réduisent les rendements. Il peut refléter un phénomène d'endogénéité : les producteurs confrontés à des conditions de production moins favorables ou à des risques climatiques plus élevés peuvent être précisément ceux qui choisissent d'adopter des semences améliorées afin de limiter les pertes. L'absence d'informations détaillées sur les variétés utilisées, la qualité des semences ou les pratiques de gestion des cultures ne permet pas d'isoler complètement cet effet.
+
+L'irrigation présente quant à elle un effet positif mais non significatif. Ce résultat est cohérent avec le contexte agricole burkinabè, où la production de maïs demeure essentiellement pluviale et où les superficies effectivement irriguées restent limitées. L'impact potentiel de l'irrigation peut ainsi être difficile à mettre en évidence dans les données disponibles.
+
+En revanche, le niveau d'instruction du chef de ménage apparaît positivement associé aux rendements. Bien que l'effet soit seulement significatif au seuil de 10 %, ce résultat suggère que l'éducation peut favoriser une meilleure adoption des bonnes pratiques agricoles, une meilleure gestion des intrants ou une plus grande capacité d'accès à l'information technique.
+
+L'analyse spatiale confirme également l'existence de fortes disparités régionales des rendements. La cartographie montre que certaines grappes présentent des niveaux de productivité nettement supérieurs à d'autres, traduisant probablement des différences de fertilité des sols, de disponibilité des ressources naturelles, d'accès aux marchés ou de pratiques agricoles.
+
+Enfin, l'intégration des données climatiques issues de NASA POWER met en évidence une relation positive et hautement significative entre la pluviométrie cumulée et les rendements. Chaque millimètre supplémentaire de pluie est associé à une augmentation moyenne d'environ 0,66 kg/ha du rendement. Toutefois, la pluviométrie n'explique qu'environ 10 % de la variabilité observée, ce qui confirme que les performances agricoles dépendent également de nombreux autres facteurs agronomiques, économiques et institutionnels.
+
+Ces résultats apportent une réponse nuancée à la problématique de l'étude. Les données ne permettent pas de conclure que la disponibilité ou l'utilisation des engrais et des semences améliorées entraîne, à elle seule, une augmentation significative des rendements du maïs. Les performances des exploitations apparaissent davantage déterminées par un ensemble de facteurs complémentaires, notamment les conditions agroécologiques, le capital humain des producteurs et les conditions climatiques.
+
+Ces constats suggèrent que les politiques publiques visant à accroître la productivité du maïs ne devraient pas se limiter à améliorer l'accès aux intrants. Elles gagneraient également à renforcer les services de vulgarisation agricole, la formation des producteurs, l'adaptation des pratiques aux conditions locales et la diffusion de techniques de gestion durable des sols et de l'eau.
+
+\newpage
+
+# Chapitre VIII : Limites et recommandations
+
+Cette étude présente plusieurs limites, principalement liées aux caractéristiques des données de l'EHCVM 2021 et aux choix méthodologiques nécessaires pour estimer la production et le rendement du maïs.
+
+Premièrement, la production des ménages ayant terminé leur récolte n'est pas observée directement. Elle a été reconstituée à partir des différentes utilisations déclarées (consommation, dons, ventes et stocks), ce qui peut conduire à une sous-estimation lorsque certains postes ne sont pas renseignés ou ne peuvent pas être convertis en kilogrammes.
+
+Deuxièmement, toutes les unités locales de mesure n'ont pas pu être converties. Les unités telles que le **Yorouba**, le **Tine** ou certaines unités classées comme **Autres** ne disposent pas d'équivalent dans la table nationale de conversion utilisée. Les observations concernées ont donc été exclues des calculs de production.
+
+Troisièmement, environ un cinquième des ménages producteurs ne disposaient d'aucune information exploitable permettant de reconstituer leur production. Par ailleurs, plusieurs ménages ne renseignaient qu'une partie des différents usages de la récolte, ce qui contribue également à une sous-estimation du niveau absolu de production.
+
+Quatrièmement, les données sur les intrants agricoles sont collectées au niveau du ménage et non au niveau de chaque culture. Les dépenses en intrants utilisées dans les modèles économétriques ne peuvent donc pas être attribuées exclusivement au maïs, ce qui limite l'interprétation causale des coefficients estimés.
+
+Cinquièmement, les modèles économétriques n'intègrent pas certaines variables susceptibles d'influencer fortement les rendements, notamment la qualité des sols, les pratiques culturales, les attaques parasitaires, les variétés précises de semences, les dates de semis ou encore l'intensité réelle de l'irrigation. Les résultats doivent ainsi être interprétés comme des associations statistiques et non comme des relations causales.
+
+Enfin, les rendements estimés demeurent nettement inférieurs aux statistiques de référence de la FAOSTAT. Cet écart s'explique principalement par la méthode de reconstitution de la production à partir des déclarations des ménages, par l'absence de conversion de certaines unités locales et par le fait que les stocks et les consommations sont observés au moment de l'enquête et non à la fin complète de la campagne agricole.
+
+## 9. Recommandations
+
+Au regard des résultats obtenus, plusieurs recommandations peuvent être formulées afin d'améliorer durablement la productivité du maïs au Burkina Faso.
+
+-    Renforcer l'accès des producteurs aux intrants agricoles de qualité, notamment les engrais et les semences améliorées, tout en veillant à leur disponibilité au moment des semis.
+
+-    Développer les infrastructures d'irrigation et promouvoir les techniques de gestion durable de l'eau afin de réduire la dépendance vis-à-vis de la pluviométrie, particulièrement dans les zones les plus exposées aux aléas climatiques.
+
+-    Intensifier les actions de vulgarisation agricole et de formation des producteurs afin d'améliorer l'adoption des bonnes pratiques culturales et l'utilisation efficace des intrants.
+
+-    Améliorer les dispositifs de collecte des données agricoles en harmonisant les unités locales de mesure et en renseignant directement la production totale récoltée, ce qui permettrait de limiter les opérations de reconstitution.
+
+-    Enrichir les prochaines enquêtes agricoles par des informations plus détaillées sur les caractéristiques des parcelles (fertilité des sols, pratiques culturales, intensité de l'irrigation, variétés cultivées), afin d'améliorer les analyses économétriques.
+
+-    Poursuivre le développement des systèmes d'information géographique et des données climatiques satellitaires, comme celles de la NASA POWER, afin de mieux suivre les conditions de production et d'orienter les politiques agricoles face aux effets du changement climatique.
+
+Ces recommandations visent à la fois à améliorer la performance de la filière maïs et à renforcer la qualité des données mobilisées pour l'évaluation des politiques publiques agricoles.
+
+# Conclusion
+
+Cette étude avait pour objectif d'analyser la filière du maïs au Burkina Faso à partir des données de l'EHCVM 2021 et de répondre à la question suivante : la disponibilité d'engrais et de semences améliorées dans les localités est-elle associée à des rendements plus élevés du maïs ?
+
+L'analyse a permis de reconstituer la production de plus de deux mille ménages producteurs et d'estimer un rendement national moyen d'environ 748 kg/ha. Bien que cette estimation demeure inférieure aux statistiques de référence de la FAOSTAT, cet écart s'explique principalement par les limites inhérentes aux données d'enquête et aux difficultés de conversion des unités locales, sans remettre en cause la pertinence des comparaisons entre producteurs.
+
+Les résultats économétriques montrent que les dépenses en intrants, les semences améliorées et l'irrigation ne présentent pas d'effet statistiquement significatif sur les rendements lorsque les différences locales entre grappes sont prises en compte. En revanche, le niveau d'instruction du chef de ménage est positivement associé aux performances agricoles, tandis que la pluviométrie apparaît comme un déterminant majeur des rendements.
+
+Ainsi, la problématique de départ reçoit une réponse nuancée. Les résultats ne permettent pas de confirmer que la disponibilité ou l'utilisation des engrais et des semences améliorées suffit, à elle seule, à améliorer significativement les rendements du maïs au Burkina Faso. L'efficacité de ces intrants dépend manifestement du contexte de production dans lequel ils sont utilisés, notamment des conditions climatiques, des caractéristiques des exploitations et du capital humain des producteurs.
+
+Cette étude souligne donc la nécessité d'adopter une approche intégrée du développement agricole, combinant amélioration de l'accès aux intrants, renforcement des compétences des producteurs, accompagnement technique et meilleure adaptation des pratiques agricoles aux conditions agroécologiques locales.
+
+\newpage
+
+# Références bibliographiques
+
+Banque mondiale. (2023). *Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM 2021) : Manuel de l'utilisateur et bases de données – Burkina Faso*. Living Standards Measurement Study (LSMS). <https://www.worldbank.org/en/programs/lsms>
+
+Food and Agriculture Organization of the United Nations. (2024). *FAOSTAT Statistical Database*. <https://www.fao.org/faostat/>
+
+National Aeronautics and Space Administration. (2024). *NASA POWER Data Access Viewer*. NASA Langley Research Center. <https://power.larc.nasa.gov/>
+
+Institut National de la Statistique et de la Démographie (INSD) & Banque mondiale. (2021). *Questionnaires de l'Enquête Harmonisée sur les Conditions de Vie des Ménages (EHCVM 2021), Burkina Faso*.
+
+Institut National de la Statistique et de la Démographie (INSD) & Banque mondiale. (2021). *Dictionnaire des variables de l'EHCVM 2021, Burkina Faso*.
+
+Institut National de la Statistique et de la Démographie (INSD) & Banque mondiale. (2021). *Table de conversion des unités locales de mesure – Phase 2 (EHCVM 2021)*.
+
+\newpage
+
+# Table des matières
+
+\setcounter{tocdepth}{3}
+
+\renewcommand{\contentsname}{ }
+
+\tableofcontents

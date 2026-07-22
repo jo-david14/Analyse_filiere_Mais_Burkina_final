@@ -1,0 +1,318 @@
+/* ======================================================
+   CSS PERSONNALISÉ — Filière Maïs — Burkina Faso 2021
+   Palette : Bleu nuit · Or chaud · Blanc cassé
+   ====================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Raleway:wght@400;600;800&display=swap');
+
+/* ── Variables ─────────────────────────────────────── */
+:root {
+  --bleu-nuit:   #1c2e4a;
+  --bleu-moyen:  #2a4a7f;
+  --bleu-clair:  #d8e6f7;
+  --or-chaud:    #c9920a;
+  --or-pale:     #fff5d6;
+  --bleu-clair: #e0f2fe;
+  --ardoise:     #f0f4f8;
+  --texte:       #1e2a38;
+  --texte-doux:  #4a5568;
+  --blanc:       #ffffff;
+}
+
+/* ── Base globale ───────────────────────────────────── */
+body {
+  font-family: 'Nunito Sans', sans-serif;
+  color: var(--texte);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Slide de base ──────────────────────────────────── */
+.remark-slide-content {
+  background: var(--blanc);
+  padding: 24px 52px 20px 52px;
+  box-sizing: border-box;
+}
+
+/* ── Slide titre ─────────────────────────────────────── */
+.title-slide {
+  background: none; /* On enlève le dégradé pour laisser l'image de fond */
+  color: var(--blanc) !important;
+}
+.title-slide h1 {
+  font-family: 'Raleway', sans-serif;
+  font-size: 2.4em;
+  font-weight: 800;
+  color: var(--blanc) !important;
+  text-shadow: 3px 3px 10px rgba(0,0,0,0.9); /* Ombre très forte pour lisibilité sur image */
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+.title-slide h2 {
+  font-size: 1.25em;
+  font-weight: 600;
+  color: var(--blanc) !important;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.9);
+  margin-bottom: 16px;
+}
+.title-slide p, .title-slide em {
+  color: var(--blanc) !important;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+  font-size: 0.95em;
+}
+.title-slide strong {
+  color: #fdd76e !important;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+}
+
+/* ── Slides intercalaires inverses (Transitions de Module) ─── */
+.inverse {
+  background: linear-gradient(145deg, var(--bleu-nuit), var(--bleu-moyen));
+  color: var(--blanc) !important;
+}
+.inverse h1 {
+  font-family: 'Raleway', sans-serif;
+  font-size: 2.2em;
+  font-weight: 800;
+  color: #fdd76e !important; /* Titre principal en doré/jaune pour un contraste parfait */
+  border-bottom: none;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.inverse h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #ffffff !important; /* Sous-titre en blanc pur */
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.inverse h3 {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #b8d4f5 !important; /* Texte en bleu très clair */
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* ── Titres de slides (bannière bleu nuit / or) ───────── */
+.remark-slide-content h1 {
+  font-family: 'Raleway', sans-serif;
+  font-size: 1.35em;
+  font-weight: 800;
+  color: var(--blanc) !important;
+  background: linear-gradient(135deg, var(--bleu-nuit), var(--bleu-moyen));
+  border-bottom: 4px solid var(--or-chaud);
+  padding: 12px 52px; /* Le texte touche les bords gauche/droit */
+  margin: -24px -52px 18px -52px; /* Fait déborder la bande sur toute la largeur */
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 3px 10px rgba(28,46,74,0.15);
+}
+.remark-slide-content h2 {
+  font-family: 'Raleway', sans-serif;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--bleu-moyen);
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+.remark-slide-content h3 {
+  font-size: 0.98em;
+  font-weight: 700;
+  color: var(--or-chaud);
+  margin-top: 10px;
+}
+
+/* ── CORRECTIF : neutralise la bannière sur titre & inverse ──
+   .title-slide h1 et .inverse h1 ont la MÊME spécificité que
+   .remark-slide-content h1 ci-dessus (1 classe + 1 balise).
+   À spécificité égale, c'est la règle la plus basse dans le
+   fichier qui gagne : la bannière écrasait donc silencieusement
+   le style voulu pour ces deux types de diapo. On la neutralise
+   ici, explicitement, avec !important pour ne plus jamais
+   dépendre de l'ordre des règles dans le fichier. ────────── */
+.title-slide h1,
+.inverse h1 {
+  background: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 0 8px 0 !important;
+}
+
+/* ── Listes ──────────────────────────────────────────── */
+.remark-slide-content ul { margin-left: 16px; padding-left: 0; }
+.remark-slide-content li { margin-bottom: 6px; line-height: 1.5; }
+.remark-slide-content li::marker { color: var(--or-chaud); }
+
+/* ── Centrage figures ─────────────────────────────────── */
+.remark-slide-content img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+}
+
+/* ── Centrage kable tables ───────────────────────────── */
+.remark-slide-content table {
+  border-collapse: collapse;
+  width: 90%;
+  margin: 16px auto !important;
+  font-size: 0.85em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.remark-slide-content th {
+  background: var(--bleu-nuit);
+  color: var(--blanc);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.88em;
+}
+.remark-slide-content td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: var(--texte);
+}
+.remark-slide-content tr:nth-child(even) td { background: var(--ardoise); }
+.remark-slide-content tr:hover td { background: var(--bleu-clair); }
+
+/* ── Boîtes Chiffres clés ───────────────────────────── */
+.chiffre-box {
+  background: linear-gradient(135deg, var(--bleu-nuit), var(--bleu-moyen));
+  border-radius: 10px;
+  color: var(--blanc);
+  text-align: center;
+  padding: 18px 10px;
+  margin: 5px;
+  box-shadow: 0 4px 12px rgba(28,46,74,0.20);
+}
+.chiffre-box .val {
+  font-family: 'Raleway', sans-serif;
+  font-size: 2.0em;
+  font-weight: 800;
+  color: #fdd76e;
+  display: block;
+  line-height: 1.1;
+}
+.chiffre-box .lab {
+  font-size: 0.78em;
+  color: rgba(255,255,255,0.85);
+  margin-top: 5px;
+  display: block;
+}
+
+/* ── Boîte alerte orange/or ──────────────────────────── */
+.alerte {
+  background: var(--or-pale);
+  border-left: 5px solid var(--or-chaud);
+  padding: 10px 16px;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-size: 0.9em;
+  color: #5a3a00;
+}
+
+/* ── Boîte résultat bleue ────────────────────────────── */
+.resultat {
+  background: var(--bleu-clair);
+  border-left: 5px solid var(--bleu-moyen);
+  padding: 10px 16px;
+  border-radius: 5px;
+  margin: 10px 0;
+  font-size: 0.9em;
+  color: var(--bleu-nuit);
+}
+
+/* ── Footnote ─────────────────────────────────────────── */
+.footnote {
+  font-size: 0.70em;
+  color: var(--texte-doux);
+  font-style: italic;
+  border-top: 1px solid #d1dce8;
+  padding-top: 5px;
+  margin-top: 14px;
+}
+
+/* ── Numéro de slide ─────────────────────────────────── */
+.remark-slide-number {
+  font-size: 0.68em;
+  color: #94a3b8;
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+/* ── Pull left / right ───────────────────────────────── */
+.pull-left  { float: left;  width: 47%; padding-right: 12px; }
+.pull-right { float: right; width: 47%; padding-left:  12px; }
+
+/* ── Grille 3 colonnes ───────────────────────────────── */
+.col3 { display: flex; gap: 16px; margin-top: 12px; justify-content: center; }
+.col3 > div { flex: 1; }
+
+/* ── Badges ──────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  background: var(--or-chaud);
+  color: var(--blanc);
+  font-weight: 700;
+  font-size: 0.80em;
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-right: 6px;
+  font-family: 'Raleway', sans-serif;
+}
+
+/* ── Centrage général .center ────────────────────────── */
+.center { text-align: center; }
+.center img {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ── Ligne de séparation déco ────────────────────────── */
+hr {
+  border: none;
+  border-top: 2px solid var(--or-chaud);
+  margin: 14px 0;
+  opacity: 0.5;
+}
+
+/* ── Centrage vertical de contenu ─────────────────────── */
+.vcenter {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 600px;
+}
+
+/* ── Centrage vertical d'une image seule + son texte ──── */
+.img-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 380px;
+}
+.img-center img { margin: 0 auto 10px auto; }
+
+
+/* Supprimer toute bordure supérieure sur le contenu des slides */
+.remark-slide-content {
+  border-top: none !important;
+}
+
+/* Supprimer d'éventuels pseudo-éléments décoratifs */
+.remark-slide-content::before,
+.remark-slide-content::after {
+  display: none !important;
+}
+
+/* Aligner à gauche les informations de la diapositive titre */
+.title-slide p {
+  text-align: left !important;
+  margin-left: 0;
+  margin-right: 0;
+}

@@ -1,0 +1,13 @@
+name: Dashboard
+title: dashboard
+username: antandao
+account: antandao
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17628628
+bundleId: 12302313
+url: https://antandao.shinyapps.io/Dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data_prep/preparer_donnees_dashboard.R

@@ -1,0 +1,12 @@
+# Fichiers R / RStudio
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.RDataTmp
+
+# Dossier de données (contient les gros fichiers .dta)
+donnee/
+
+# Autres fichiers volumineux
+pluie_grappe_nasapower.rds
