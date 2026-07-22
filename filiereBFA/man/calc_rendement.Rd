@@ -4,7 +4,7 @@
 \alias{calc_rendement}
 \title{Calcul du Rendement (kg/ha)}
 \usage{
-calc_rendement(data, codes_prod, table_conv)
+calc_rendement(data, codes_prod, table_conv = NULL, codes_nsu = c(5, 6))
 }
 \arguments{
 \item{data}{L'objet renvoye par load_filiere()}

@@ -135,27 +135,51 @@ knitr::include_graphics("sorties/Sorties_preambule/top10_produits_vendus.png")
 ]
 
 .resultat[
-**Le Maïs domine le paysage agricole burkinabè** : C'est la 1ère culture en termes de superficie mobilisée et la 1ère culture vendue sur le territoire des hommes intègres**
+**Le Maïs domine le paysage agricole burkinabè** : C'est la 1ère culture en termes de superficie mobilisée et la 1ère culture vendue sur le territoire national.
 ]
 
 ---
 
-# Consommation & Dépendance du Marché
+# Production
 
 .pull-left[
 .center[
-### Sources d'approvisionnement
+### Part en terme de production
 ```{r m1-sources, out.width="90%"}
-knitr::include_graphics("sorties/Sorties_module_1/sources_mais.png")
+knitr::include_graphics("sorties/Sorties_module_1/top10_part_producteurs.png")
 ```
 ]
 ]
 
 .pull-right[
-.center[
 .alerte[
-**Constat clé :** L'autoconsommation ne représente que **42.79 %** des approvisionnements en maïs une part non negligeable. Les ménages achètent la majeure partie sur le marché.
-]]]
+**Constat clé :** **40,8 %** des ménages produisent le maïs, ce qui confirme son positionnement en tant que produit stratégique.
+]
+
+<br>
+.center[
+### Sources d'approvisionnement du maïs
+```{r m1-sources-approv, out.width="88%"}
+knitr::include_graphics("sorties/Sorties_module_1/sources_mais.png")
+```
+]
+]
+
+---
+
+# Quantités & Calories : la place du maïs dans l'assiette
+
+.pull-left[
+.resultat[
+**Une source énergétique majeure.** Le maïs intervient sous plusieurs formes dans la consommation des ménages : épi, grain, farine et semoule. Converties en kg via la **base NSU** (poids calibrés par strate *région × milieu*), les quantités consommées confirment qu'il constitue un pilier calorique, en particulier chez les ménages ruraux producteurs.
+]
+]
+
+.pull-right[
+.alerte[
+**De la production à la consommation :** les ménages producteurs couvrent une part importante de leurs besoins par **autoconsommation**, ce qui les protège des fluctuations de prix — un argument central pour le Module 2 (typologie) et le Module 5 (impact sur la sécurité alimentaire).
+]
+]
 
 ---
 
@@ -180,7 +204,7 @@ knitr::include_graphics("sorties/Sorties_preambule/top10_exportations_quantite.p
 ]
 
 .resultat[
-**Analyse du commerce :** Bien que le maïs ne soit pas la filière la plus commercialisée dans les échanges, il présente un enjeu majeur.Il est peu importe ce qui revele certainement une bonne capacite de prise en charge nationalement et fait parti du top 10 des produits les plus exportes 
+**Analyse du commerce :** Le maïs est **peu importé**, ce qui révèle une bonne capacité de prise en charge de la demande par la production nationale. Il figure par ailleurs dans le **top 10 des produits les plus exportés**, confirmant son rôle stratégique dans les échanges agricoles du pays.
 ]
 
 ---
@@ -202,18 +226,17 @@ class: inverse, center, middle
 2. **Producteur uniquement** : Cultive du maïs mais n'en déclare pas la consommation directe.
 3. **Consommateur uniquement** : Dépend entièrement des achats sur le marché.
 4. **Ni producteur ni consommateur** : Ménages hors filière.
+
+.alerte[
+**Intérêt théorique :** Cette classification permet d'isoler l'effet direct de l'autoconsommation vs. la vulnérabilité liée aux chocs de prix sur les marchés.
+]
 ]
 
 .pull-right[
-.alerte[
-**Intérêt théorique :**  
-Cette classification permet d'isoler l'effet direct de l'autoconsommation vs. la vulnérabilité liée aux chocs de prix sur les marchés.
-]
-
-<br>
 .center[
-```{r m2-fies, out.width="90%"}
-knitr::include_graphics("sorties/graph_m2_fies.png")
+### Sécurité alimentaire & pauvreté par groupe
+```{r m2-profil, out.width="100%"}
+knitr::include_graphics("sorties/Sorties_module_2/profil_groupes.png")
 ```
 ]
 ]
@@ -255,7 +278,7 @@ tab_m2 %>%
 <br>
 
 .resultat[
-**Lecture du tableau :** Les ménages **Producteurs-Consommateurs** affichent la meilleure sécurité alimentaire (Score FIES le plus bas, 2,9) malgré une pauvreté monétaire élevée — l'autoconsommation protège efficacement contre la faim. À l'inverse, le groupe **"Ni producteur ni consommateur"** cumule le score FIES le plus élevé (3,5) et le taux de pauvreté le plus fort (47,9 %), confirmant leur double vulnérabilité, hors filière maïs.
+**Lecture du tableau :** Les ménages **Consommateurs uniquement** (urbains à 63 %) affichent le meilleur score FIES (2,4) et la plus faible pauvreté (17,5 %) — reflet de leur revenu marchand. Les **Producteurs-Consommateurs** conservent un FIES bas (2,9) malgré une pauvreté élevée (39 %) : l'autoconsommation protège contre la faim. À l'inverse, le groupe **"Ni producteur ni consommateur"** cumule le score FIES le plus élevé (3,5) et une insécurité sévère de **27 %** — la double vulnérabilité, hors filière maïs.
 ]
 
 .footnote[*FIES (0-8, élevé = forte insécurité). HDDS (0-12, élevé = meilleure diversité alimentaire).*]
@@ -304,10 +327,10 @@ tab_m3 %>%
 ]
 
 .alerte[
-**Ecart FAOSTAT :** Rendement national estimé à **~748 kg/ha** contre **1 521 kg/ha** (FAOSTAT), s'expliquant : 
+**Ecart FAOSTAT :** Rendement national estimé à **~748 kg/ha** contre **1 521 kg/ha** (FAOSTAT), s'expliquant :
 - Absence d'équivalent en unité standard de certaines unités locales.
 - Les quantités stockées ou autoconsommées sont observées uniquement au moment de l'enquête.
-6 Les statistiques de FAOSTAT correspondent à une estimation théorique de la production nationale. 
+- Les statistiques FAOSTAT correspondent à une estimation théorique de la production nationale.
 ]
 ]
 
@@ -415,11 +438,11 @@ class: inverse, center, middle
 .pull-left[
 .center[
 ```{r m4-marge, out.width="100%"}
-knitr::include_graphics("sorties/graph_m4_marge.png")
+knitr::include_graphics("sorties/Sorties_module_4/graph_marge_region.png")
 ```
 ]
 .resultat[
-**Forte disparité régionale :** La marge varie de **887 FCFA/kg** dans les régions les plus rentables à des **marges négatives** (jusqu'à -165 FCFA/kg) dans les régions 1 et 13.
+**Forte disparité régionale :** La marge varie de **887 FCFA/kg** dans les régions les plus rentables (régions 3 et 5) à des **marges négatives** (jusqu'à -165 FCFA/kg) dans les régions 1 et 13.
 ]
 ]
 

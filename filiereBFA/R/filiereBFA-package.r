@@ -208,49 +208,190 @@ profil_menage <- function(data, fies, hdds) {
 #' @return Un data.frame avec hhid, surface_ha, production_kg, rendement_kg_ha, hhweight
 #' @export
 #' @import haven tidyverse labelled
-calc_rendement <- function(data, codes_prod, table_conv) {
+calc_rendement <- function(data, codes_prod, table_conv = NULL, codes_nsu = c(5, 6)) {
+  
+  # 0. Préparation de la table de conversion NSU
+  nsu_conv <- data$nsu %>%
+    filter(!is.na(poids_moyen)) %>%
+    mutate(strate = region * 10 + milieu)
+  
+  nsu_mais <- nsu_conv %>%
+    filter(codpr %in% codes_nsu) %>%
+    group_by(codpr, uniteID, strate) %>%
+    summarise(poids_moyen_g = median(poids_moyen, na.rm = TRUE), .groups = "drop") %>%
+    mutate(poids_moyen_kg = poids_moyen_g / 1000)
+  
+  nsu_mais_national <- nsu_mais %>%
+    group_by(codpr, uniteID) %>%
+    summarise(poids_moyen_kg_nat = median(poids_moyen_kg, na.rm = TRUE),
+              .groups = "drop")
+  
+  nsu_mais <- nsu_mais %>%
+    left_join(nsu_mais_national, by = c("codpr", "uniteID")) %>%
+    mutate(poids_moyen_kg = coalesce(poids_moyen_kg, poids_moyen_kg_nat)) %>%
+    select(-poids_moyen_kg_nat)
+  
+  # Correspondance complète code-unité EHCVM -> uniteID NSU
+  corresp_unite <- tibble(
+    code_unite   = c( 1,    3,    4,    5,    6),
+    uniteID_nsu  = c(100,  149,  145,  138,  135)
+  )
+  
+  recoder_autre <- function(texte) {
+    t <- tolower(as.character(texte))
+    case_when(
+      grepl("bo[îi]te|botes|boites", t)              ~ 107L,
+      grepl("panier", t)                             ~ 128L,
+      grepl("grand tas", t)                          ~ 143L,
+      grepl("sac petit", t)                          ~ 137L,
+      grepl("caisse", t)                             ~ 114L,
+      grepl("sachet", t)                             ~ 139L,
+      grepl("tonne", t)                              ~ 100L,  # déjà en kg
+      TRUE                                           ~ NA_integer_
+    )
+  }
+  
+  # Strate de chaque ménage
+  strate_hh <- data$welfare %>%
+    select(hhid, region, milieu) %>%
+    mutate(strate = region * 10 + milieu)
+  
+  # Fonction interne de conversion
+  convertir_kg_nsu <- function(df, var_qte, var_unite, var_etat, var_autre = NULL) {
+    tmp <- df %>%
+      mutate(
+        .qte       = .data[[var_qte]],
+        code_unite = .data[[var_unite]],
+        etat       = .data[[var_etat]],
+        uniteID = case_when(
+          code_unite %in% corresp_unite$code_unite ~
+            corresp_unite$uniteID_nsu[match(code_unite, corresp_unite$code_unite)],
+          code_unite == 7 & !is.null(var_autre)     ~
+            recoder_autre(.data[[var_autre]]),
+          TRUE ~ NA_real_
+        ),
+        codpr = case_when(
+          # On prend le premier code NSU pour épi, le deuxième pour grain
+          etat == 1            ~ codes_nsu[1],
+          etat %in% c(2, 3, 4) ~ codes_nsu[min(2, length(codes_nsu))],
+          TRUE                 ~ NA_real_)
+      ) %>%
+      left_join(strate_hh, by = "hhid") %>%
+      left_join(nsu_mais, by = c("codpr", "uniteID", "strate"))
+    
+    tmp$.qte * tmp$poids_moyen_kg
+  }
+  
+  convertir_kg_16d <- function(df, var_qte, var_unite, var_etat) {
+    var_autre <- paste0(var_unite, "_autre")
+    if (!var_autre %in% names(df)) var_autre <- NULL
+    convertir_kg_nsu(df, var_qte, var_unite, var_etat, var_autre)
+  }
   
   # 1. Surface par parcelle
   parcelles <- data$s16a %>%
     transmute(
       hhid, s16aq02, s16aq03,
-      surface_ha = case_when(
+      surface_parcelle_ha = case_when(
         s16aq09b == 1 ~ s16aq09a,
         s16aq09b == 2 ~ s16aq09a / 10000,
         TRUE          ~ NA_real_)
     ) %>%
     distinct(hhid, s16aq02, s16aq03, .keep_all = TRUE)
   
-  # 2. Surface totale par ménage
-  surface_hh <- data$s16c %>%
+  # 2. Surface par culture par ménage
+  surface_mais <- data$s16c %>%
     filter(s16cq04 %in% codes_prod) %>%
     left_join(parcelles, by = c("hhid", "s16cq02" = "s16aq02",
                                 "s16cq03" = "s16aq03")) %>%
     mutate(
-      pct = if_else(s16cq07 == 1 & is.na(s16cq08), 100, as.numeric(s16cq08)),
-      surface_prod_ha = surface_ha * pct / 100
+      pct_mais = if_else(s16cq07 == 1 & is.na(s16cq08), 100,
+                         as.numeric(s16cq08)),
+      surface_mais_ha = surface_parcelle_ha * pct_mais / 100
     ) %>%
+    select(hhid, s16cq02, s16cq03, surface_mais_ha,
+           s16cq11, s16cq12, s16cq15)
+  
+  surface_mais_hh <- surface_mais %>%
     group_by(hhid) %>%
-    summarise(surface_ha = sum(surface_prod_ha, na.rm = TRUE), .groups = "drop")
+    summarise(surface_ha = sum(surface_mais_ha, na.rm = TRUE),
+              .groups = "drop")
   
-  # 3. Production en kg par ménage (estimation directe s16dq05c)
-  production_hh <- data$s16d %>%
-    filter(s16dq01 %in% codes_prod, !is.na(s16dq05c), s16dq05c > 0) %>%
-    group_by(hhid) %>%
-    summarise(production_kg = sum(s16dq05c, na.rm = TRUE), .groups = "drop")
+  # 3. Production Branche A : Récolte terminée (S16D)
+  menages_fini <- data$s16c %>%
+    filter(s16cq04 %in% codes_prod, s16cq11 == 1) %>%
+    distinct(hhid)
   
-  # 4. Récupérer le POIDS (hhweight) depuis la table welfare
-  poids <- data$welfare %>% select(hhid, hhweight)
+  s16d_mais_fini <- data$s16d %>%
+    filter(s16dq01 %in% codes_prod) %>%
+    semi_join(menages_fini, by = "hhid") %>%
+    mutate(
+      conso_kg = convertir_kg_16d(., "s16dq02a", "s16dq02b", "s16dq02c"),
+      don_kg   = convertir_kg_16d(., "s16dq03a", "s16dq03b", "s16dq03c"),
+      vente_kg = coalesce(s16dq05c,
+                          convertir_kg_16d(., "s16dq05a", "s16dq05b",
+                                           "s16dq05d")),
+      stock_kg = convertir_kg_16d(., "s16dq13a", "s16dq13b", "s16dq13c")
+    ) %>%
+    rowwise() %>%
+    mutate(
+      n_postes = sum(!is.na(c_across(c(conso_kg, don_kg, vente_kg,
+                                       stock_kg)))),
+      production_kg = if_else(n_postes > 0,
+                              sum(c_across(c(conso_kg, don_kg, vente_kg, stock_kg)),
+                                  na.rm = TRUE),
+                              NA_real_)
+    ) %>%
+    ungroup()
   
-  # 5. Fusionner Surface + Production + Poids
-  rendement <- surface_hh %>%
-    inner_join(production_hh, by = "hhid") %>%
-    left_join(poids, by = "hhid") %>%  # <-- C'EST ICI QU'ON AJOUTE HHWEIGHT
-    mutate(rendement_kg_ha = production_kg / surface_ha) %>%
-    filter(is.finite(rendement_kg_ha), rendement_kg_ha > 0, rendement_kg_ha <= 5000)
+  production_fini <- s16d_mais_fini %>%
+    left_join(surface_mais_hh, by = "hhid") %>%
+    mutate(source_production = "S16D - récolte terminée") %>%
+    filter(is.finite(surface_ha), surface_ha > 0,
+           is.finite(production_kg),  production_kg > 0)
   
-  cat("Rendement calcule pour", nrow(rendement), "menages producteurs.\n")
-  return(rendement)
+  # 4. Production Branche B : Récolte en cours (S16C)
+  production_encours <- data$s16c %>%
+    filter(s16cq04 %in% codes_prod,
+           s16cq11 == 2, !is.na(s16cq16a)) %>%
+    mutate(
+      qte_kg_nsu = convertir_kg_nsu(., "s16cq16a", "s16cq16b", "s16cq16d",
+                                    "s16cq16b_autre")
+    ) %>%
+    left_join(surface_mais_hh, by = "hhid") %>%
+    mutate(
+      production_kg     = qte_kg_nsu,
+      source_production = "S16C - récolte en cours (NSU)"
+    ) %>%
+    filter(is.finite(surface_ha), surface_ha > 0,
+           is.finite(production_kg),  production_kg > 0)
+  
+  # 5. Fusion
+  production_mais <- bind_rows(
+    production_fini %>%
+      select(hhid, hhweight, surface_ha, production_kg,
+             source_production),
+    production_encours %>%
+      select(hhid, hhweight, surface_ha, production_kg,
+             source_production)
+  ) %>%
+    mutate(rendement_kg_ha = production_kg / surface_ha)
+  
+  # 6. Filtrage agronomique (micro-parcelles et rendements absurdes)
+  production_filtre <- production_mais %>%
+    filter(surface_ha >= 0.05,
+           rendement_kg_ha <= 5000)
+  
+  # 7. Winsorisation p1/p99
+  bornes_rendement <- quantile(production_filtre$rendement_kg_ha,
+                               probs = c(0.01, 0.99), na.rm = TRUE)
+  
+  production_mais_analyse <- production_filtre %>%
+    filter(between(rendement_kg_ha,
+                   bornes_rendement[[1]], bornes_rendement[[2]]))
+  
+  cat("Rendement calcule pour", nrow(production_mais_analyse), "menages producteurs.\n")
+  return(production_mais_analyse)
 }
 
 #' Chaine de Prix (Commercialisation)

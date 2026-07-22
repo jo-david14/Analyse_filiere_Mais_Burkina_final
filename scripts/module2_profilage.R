@@ -11,6 +11,8 @@
 library(haven)
 library(tidyverse)
 library(labelled)   # pour val_labels() et as_factor()
+library(ggplot2)
+library(tidyr)
 
 ## =============================================================================
 ##  PARAMETRE : LE PRODUIT X (a adapter selon le choix du Module 1)
@@ -116,7 +118,6 @@ repondant_fies <- s08a %>%
   mutate(pct = 100 * n / sum(n)) %>%
   arrange(desc(n))
 print(repondant_fies)
-cat("  >> Si 'Chef de menage' domine (>80%), a signaler comme biais possible.\n")
 
 
 ## =============================================================================
@@ -191,25 +192,56 @@ comparatif <- menages %>%
     hdds_moyen        = wmean(hdds, hhweight)
   )
 
+comparatif %>%                       # <- comparatif utilisé tel quel, non modifié
+  select(groupe, incidence_pauvrete, fies_modere_pct, fies_severe_pct) %>%
+  pivot_longer(-groupe, names_to = "indicateur", values_to = "valeur") %>%
+  mutate(
+    indicateur = recode(indicateur,
+                        incidence_pauvrete = "Pauvreté monétaire",
+                        fies_modere_pct     = "Insécurité alim. modérée",
+                        fies_severe_pct     = "Insécurité alim. sévère"
+    ),
+    indicateur = factor(indicateur, levels = c(
+      "Pauvreté monétaire", "Insécurité alim. modérée", "Insécurité alim. sévère"
+    ))
+  ) %>%
+  ggplot(aes(x = groupe, y = valeur, fill = indicateur)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.65) +
+  geom_text(aes(label = paste0(round(valeur, 1), "%")),
+            position = position_dodge(width = 0.75),
+            hjust = -0.15, size = 3.2, color = "grey20") +
+  scale_fill_manual(values = c(
+    "Pauvreté monétaire"        = "#2C7FB8",
+    "Insécurité alim. modérée"  = "#F4A582",
+    "Insécurité alim. sévère"   = "#B2182B"
+  )) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.12))) +
+  coord_flip(clip = "off") +
+  labs(
+    title = paste("Profil des ménages selon leur relation au", X),
+    subtitle = "Indicateurs pondérés (hhweight)",
+    x = NULL, y = "%", fill = NULL
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(color = "grey40", margin = margin(b = 12)),
+    axis.text.y = element_text(size = 11, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    legend.text = element_text(size = 10),
+    plot.margin = margin(10, 20, 10, 10)
+  )
+ggsave("sorties/Sorties_module_2/profil_groupes.png", width = 9, height = 6, dpi = 300, bg = "white")
+
 # Affichage arrondi
+glimpse(comparatif)
 print(comparatif %>% mutate(across(where(is.numeric), ~ round(.x, 2))))
 
 cat("\n=== Module 2 termine. Le tableau 'comparatif' est pret. ===\n")
 cat("Il peut etre directement utilise dans le dashboard (onglet 2) ou le rapport.\n")
 
-# Graphique FIES par groupe
-graph_fies <- ggplot(comparatif, aes(x = groupe, y = fies_score, fill = groupe)) +
-  geom_bar(stat = "identity", width = 0.6) +
-  geom_text(aes(label = round(fies_score, 2)), vjust = -0.5) +
-  theme_minimal() +
-  scale_fill_brewer(palette = "Set2") +
-  labs(title = "Score FIES moyen par groupe de ménage",
-       x = "Groupe", y = "Score FIES moyen (0-8)") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 15, hjust = 1))
-
-ggsave("sorties/graph_m2_fies.png", plot = graph_fies, width = 8, height = 5, dpi = 300)
-
-# Sauvegarde pour utilisation ulterieure (dashboard, package, presentation)
-write.csv(comparatif, "sorties/module2_comparatif.csv", row.names = FALSE)
-saveRDS(comparatif, "sorties/tab_m2_profil.rds")
-saveRDS(menages, "sorties/menages_typologie.RDS")
+# Sauvegarde pour utilisation ulterieure (dashboard, package)
+# write.csv(comparatif, "sorties/module2_comparatif.csv", row.names = FALSE)
+# saveRDS(menages, "sorties/menages_typologie.RDS")

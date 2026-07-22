@@ -1,10 +1,11 @@
 #=======================================================================
 #          MODULE 1 : CHOIX ET JUSTIFICATION DU PRODUIT (MAÏS)
 #=======================================================================
-# Pré-requis : préambule.R (consommation, superficies, ventes, FAOSTAT)
-#              déjà sourcé depuis main.R.
+# Module 1 : on justifie ici le choix du maïs comme produit d'étude
+# (place dans la conso, la production, les ventes, les calories, la balance commerciale).
+# Suppose que préambule.R est déjà sourcé depuis main.R.
 
-# --- Conversion en kg des quantités consommées (S07B) ---------------------
+# --- Conversion en kg des quantités consommées (S07B) ---
 # Table NSU, spécifique Burkina Faso, même référentiel produit que S07B
 nsu <- read_dta("donnee/base_burkina/ehcvm_nsu_bfa2021.dta")
 
@@ -20,11 +21,10 @@ s07b_kg <- s07b %>%
                    "s07bq03c" = "tailleID")) %>%
   mutate(q_cons_kg = s07bq03a * poids / 1000)
 
-# Nombre de lignes sans correspondance
 sum(is.na(s07b_kg$q_cons_kg) & !is.na(s07b_kg$s07bq03a))
 
 
-# --- Fréquence de consommation du maïs ------------------------------------
+# --- Fréquence de consommation du maïs ---
 total_menages_s07b <- s07b %>% distinct(hhid, hhweight) %>%
   summarise(total = sum(hhweight, na.rm = TRUE)) %>% pull(total)
 
@@ -42,7 +42,7 @@ mais_freq_cons <- s07b_kg %>%
 View(mais_freq_cons)
 
 
-# --- Quantité moyenne consommée, maïs, pondérée ---------------------------
+# --- Quantité moyenne consommée, maïs, pondérée ---
 codes_mais <- c(5, 6, 12, 13)  # Maïs en épi, Maïs en grain, Farine de maïs, Semoule de maïs
 
 mais_qte_kg <- s07b_kg %>%
@@ -56,8 +56,7 @@ mais_qte_kg <- s07b_kg %>%
 cat("Quantite moyenne de maïs consommee:", mais_qte_kg$qte_moy_kg, "kg/menage/7 jours\n")
 
 
-# --- Sources d'approvisionnement du maïs ----------------------------------
-# Autoconsommation, achat, cadeau, en kg
+# --- Sources d'approvisionnement du maïs (autoconso, achat, cadeau) ---
 s07b_src <- s07b %>%
   left_join(table_conversion_nsu %>% select(codpr, uniteID, tailleID, poids),
             by = c("s07bq01" = "codpr", "s07bq03b" = "uniteID", "s07bq03c" = "tailleID")) %>%
@@ -100,20 +99,20 @@ source_mais_graph <- ggplot(source_mais, aes(x = source, y = part, fill = source
 ggsave("sorties/Sorties_module_1/sources_mais.png", plot = source_mais_graph, width = 8, height = 6, dpi = 300)
 
 
-# --- Part du maïs dans la superficie agricole ------------------------------
+# --- Part du maïs dans la superficie agricole ---
 part_sup_mais <- s16_a_c %>%
   filter(str_detect(produit, regex("maïs", ignore_case = TRUE)))
 cat("Le maïs occupe", part_sup_mais$poids, "% de la superificie agricole totale du pays.")
 
 
-# --- Part du maïs dans la valeur totale des ventes agricoles --------------
+# --- Part du maïs dans la valeur totale des ventes agricoles ---
 part_mais_vendu <- ventes %>%
   filter(str_detect(produit, regex("maïs", ignore_case = TRUE)))
 cat("La part de la vente de maïs dans la valeur totale des ventes agricoles est de :",
     round(100 * part_mais_vendu$part_vente, 2), "%.")
 
 
-# --- Part des producteurs de maïs parmi tous les producteurs --------------
+# --- Part des producteurs de maïs parmi tous les producteurs ---
 total_producteurs_pondere <- producteurs %>%
   distinct(hhid, hhweight) %>%
   summarise(total = sum(hhweight, na.rm = TRUE)) %>%
@@ -130,7 +129,7 @@ part_producteurs_mais <- round(100 * producteurs_mais_pondere / total_producteur
 cat("Les producteurs de maïs représentent", part_producteurs_mais,
     "% de l'ensemble des ménages producteurs agricoles du pays.\n")
 
-# --- Part des producteurs par produit, parmi les ménages agricoles --------
+# --- Part des producteurs par produit, parmi les ménages agricoles ---
 part_producteurs_produit <- producteurs %>%
   filter(!is.na(produit)) %>%
   group_by(produit) %>%
@@ -155,12 +154,11 @@ ggsave("sorties/Sorties_module_1/top10_part_producteurs.png", plot = top10_part_
        width = 10, height = 6, dpi = 300)
 
 
-# --- Part du maïs dans les calories disponibles ----------------------------
+# --- Part du maïs dans les calories disponibles ---
 calories_mais <- calories %>%
   filter(codpr %in% codes_mais) %>%
   mutate(label = prodlab)
 
-# Calories apportées par chaque type de maïs
 cal_mais <- s07b_kg %>%
   filter(s07bq01 %in% codes_mais, s07bq02 == 1, !is.na(q_cons_kg)) %>%
   left_join(calories_mais %>% select(codpr, cal, refuse),
@@ -175,7 +173,6 @@ cal_mais <- s07b_kg %>%
     kg_total   = sum(q_cons_kg * hhweight, na.rm = TRUE)
   )
 
-# Calories totales, tous produits confondus
 total_kcal_pays <- s07b_kg %>%
   filter(s07bq02 == 1, !is.na(q_cons_kg)) %>%
   left_join(calories %>% select(codpr, cal, refuse),
@@ -186,7 +183,6 @@ total_kcal_pays <- s07b_kg %>%
   ) %>%
   summarise(tot = sum(kcal * hhweight, na.rm = TRUE))
 
-# Part du maïs (tous types confondus) dans le total national
 part_mais_calories_nationales <- cal_mais %>%
   summarise(kcal_mais_total = sum(kcal_total, na.rm = TRUE)) %>%
   mutate(part_cal = round(100 * kcal_mais_total / total_kcal_pays$tot, 2))
@@ -195,16 +191,14 @@ print(part_mais_calories_nationales)
 cat("Le maïs représente", part_mais_calories_nationales$part_cal,
     "% des calories disponibles (proxy national, données EHCVM).\n")
 
-
-# --- Balance commerciale du maïs -------------------------------------------
+# --- Balance commerciale du maïs ---
 balance_table <- export_val %>%
   full_join(import_val, by = "Item", suffix = c("_export", "_import")) %>%
-  filter(str_detect(Item, regex("maize", ignore_case = TRUE))) %>%
-  summarize(
-    val_export_mais = sum(val_export, na.rm = TRUE),
-    val_import_mais = sum(val_import, na.rm = TRUE),
-    balance = val_export_mais - val_import_mais
-  )
+  filter(str_detect(Item, regex("Maize", ignore_case = TRUE))) %>%
+  mutate(
+    balance = val_export - val_import
+  ) %>%
+  slice_head(n = 1)
 print(balance_table)
 cat("La balance commerciale du maïs et de ses produits dérivés est globalement déficitaire.")
 

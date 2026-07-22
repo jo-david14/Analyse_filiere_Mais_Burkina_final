@@ -511,7 +511,8 @@ prix_conso_region <- conso_achat %>%
 # --- 13c. Marge par region ---
 marge_region <- prix_prod_region %>%
   full_join(prix_conso_region, by = "region") %>%
-  mutate(marge = prix_conso - prix_prod) %>%
+  mutate(marge = prix_conso - prix_prod,
+         nom_region = as_factor(region)) %>%
   filter(is.finite(marge)) %>%
   arrange(desc(marge))
 
@@ -519,7 +520,7 @@ cat("\nMarge commerciale (Prix conso - Prix prod) par region :\n")
 print(marge_region %>% mutate(across(where(is.numeric), ~ round(.x, 0))))
 
 # Graphique : marge par region (barres horizontales)
-g_marge <- ggplot(marge_region, aes(x = reorder(factor(region), marge), y = marge)) +
+ggplot(marge_region, aes(x = reorder(as_factor(region), marge), y = marge)) +
   geom_col(fill = "#2E86C1") +
   coord_flip() +
   geom_text(aes(label = round(marge, 0)), hjust = -0.1, size = 3.5) +
@@ -527,10 +528,8 @@ g_marge <- ggplot(marge_region, aes(x = reorder(factor(region), marge), y = marg
        subtitle = "Prix consommation - Prix producteur (FCFA/kg)",
        x = "Région", y = "Marge (FCFA/kg)") +
   theme_minimal()
-ggsave("sorties/Sorties_module_4/graph_marge_region.png", plot = g_marge, width = 8, height = 5, dpi = 120)
-ggsave("sorties/graph_m4_marge.png", plot = g_marge, width = 8, height = 5, dpi = 300)
+ggsave("sorties/Sorties_module_4/graph_marge_region.png", width = 8, height = 5, dpi = 120)
 cat("  Graphique sauvegarde : sorties/Sorties_module_4/graph_marge_region.png\n")
-saveRDS(marge_region, "sorties/tab_m4_marge.rds")
 
 
 ## =============================================================================

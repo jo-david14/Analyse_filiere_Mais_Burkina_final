@@ -1,4 +1,9 @@
-
+#===============================================================================
+#                     MODULE 5 : Sécurité alimentaire et maïs
+#===============================================================================
+# Module 5 : est-ce que la filière maïs (production, vente, revenu) a un
+# effet sur la sécurité alimentaire du ménage (FIES) et sa diversité
+# alimentaire (HDDS) ?
 
 library(labelled)
 library(broom)
@@ -6,7 +11,7 @@ library(ggplot2)
 library(dplyr)
 library(forcats)
 
-# --- Quantité vendue de maïs, par ménage (S16D, directement en kg) ---------
+# --- Quantité vendue de maïs par ménage (S16D, déjà en kg) ---
 vente_mais_hh <- s16d %>%
   filter(s16dq01 == codes_mais_s16c, s16dq04 == 1) %>%
   group_by(hhid) %>%
@@ -18,9 +23,9 @@ vente_mais_hh <- s16d %>%
 
 cat("Ménages avec vente de maïs enregistrée :", nrow(vente_mais_hh), "\n")
 
-# --- Table de participation filière, au niveau de TOUS les ménages ---------
-# (pas seulement les producteurs : un non-producteur a taux_vente = 0 par
-# construction, cohérent avec la logique de la régression)
+# --- Table de participation à la filière, pour TOUS les ménages ---
+# Un non-producteur a taux_vente = 0 par construction, ça reste cohérent
+# avec la logique de la régression.
 filiere_mais <- menages %>%
   distinct(hhid) %>%
   left_join(production_mais_analyse %>% distinct(hhid, production_kg), by = "hhid") %>%
@@ -31,8 +36,8 @@ filiere_mais <- menages %>%
     revenu_vente_fcfa = replace_na(revenu_vente_fcfa, 0),
     taux_vente_mais = case_when(
       production_kg > 0                    ~ pmin(vendu_kg / production_kg, 1),
-      production_kg == 0 & vendu_kg == 0   ~ 0,             # non-producteur/non-vendeur, cas normal
-      production_kg == 0 & vendu_kg > 0    ~ NA_real_,       # incohérence -> exclu, à documenter
+      production_kg == 0 & vendu_kg == 0   ~ 0,
+      production_kg == 0 & vendu_kg > 0    ~ NA_real_,   # incohérence, exclu, à documenter
       TRUE ~ NA_real_
     ),
     ln_revenu_mais = log1p(revenu_vente_fcfa)
@@ -52,8 +57,8 @@ educ_chef_m5 <- s01 %>%
   select(hhid, pid) %>%
   left_join(s02_me %>% select(hhid, pid, s02q03), by = c("hhid", "pid")) %>%
   mutate(educ_chef_scolarise = case_when(
-    s02q03 == 1 ~ 1L,   # Oui, a fait/fait des études
-    s02q03 == 2 ~ 0L,   # Non, jamais scolarisé
+    s02q03 == 1 ~ 1L,
+    s02q03 == 2 ~ 0L,
     TRUE ~ NA_integer_
   )) %>%
   select(hhid, educ_chef_scolarise)
@@ -69,7 +74,7 @@ summary(age_chef_m5$age_chef)
 
 controles_m5 <- menages %>%
   select(hhid, grappe, hhweight, hhsize, sexe_chef, milieu, region, pcexp) %>%
-  left_join(age_chef_m5, by = "hhid") %>%       # <- age_chef CORRIGÉ (hage)
+  left_join(age_chef_m5, by = "hhid") %>%
   left_join(possession_terre_hh, by = "hhid") %>%
   left_join(educ_chef_m5, by = "hhid") %>%
   mutate(
@@ -88,8 +93,8 @@ data_reg_m5 <- menages %>%
 
 cat("Table assemblée :", nrow(data_reg_m5), "lignes\n")
 
-# Échantillon final : on exclut les lignes avec des valeurs manquantes sur
-# les variables essentielles à la régression (score_fies, contrôles)
+# Échantillon final : j'exclus les lignes avec des valeurs manquantes sur
+# les variables essentielles à la régression (score FIES, contrôles).
 ech_reg_m5 <- data_reg_m5 %>%
   filter(!is.na(score_fies), !is.na(age_chef), !is.na(sexe_chef),
          !is.na(educ_chef_scolarise), !is.na(ln_pcexp))
@@ -108,8 +113,8 @@ ech_reg_m5 %>%
     hdds_moyen = weighted.mean(hdds, hhweight, na.rm = TRUE)
   ) %>% print()
 
-# Vérifie surtout : parmi les non-producteurs (producteur_mais == 0),
-# taux_vente_mais et ln_revenu_mais doivent être à 0 systématiquement
+# Contrôle : chez les non-producteurs, taux_vente_mais et ln_revenu_mais
+# doivent être systématiquement à 0
 ech_reg_m5 %>% filter(producteur_mais == 0) %>%
   summarise(max_taux_vente = max(taux_vente_mais, na.rm = TRUE),
             max_ln_revenu  = max(ln_revenu_mais, na.rm = TRUE))
@@ -141,6 +146,7 @@ cat("N régression FIES :", nobs(reg_m5_fies), "\n")
 cat("N régression HDDS :", nobs(reg_m5_hdds), "\n")
 
 
+# --- Hétérogénéité : coopérative et irrigation au niveau village ---
 communaute_m5 <- s03_co %>%
   distinct(grappe, .keep_all = TRUE) %>%
   transmute(
@@ -178,7 +184,7 @@ modelsummary::modelsummary(
 )
 
 
-# --- Extraction propre des coefficients + IC 95%, sans l'intercept/FE ---
+# --- Extraction des coefficients + IC 95%, sans l'intercept ---
 extraire_coefs <- function(modele, nom_modele) {
   broom::tidy(modele, conf.int = TRUE) %>%
     filter(!term %in% c("(Intercept)")) %>%
@@ -190,7 +196,6 @@ coefs_m5 <- bind_rows(
   extraire_coefs(reg_m5_hdds, "HDDS (0-12, \u2191 = mieux)")
 )
 
-# --- Labels lisibles pour les variables (au lieu des noms de code R) ---
 labels_var <- c(
   producteur_mais      = "Producteur de maïs",
   ln_revenu_mais        = "ln(Revenu vente maïs)",
@@ -203,11 +208,9 @@ labels_var <- c(
 coefs_m5 <- coefs_m5 %>%
   mutate(
     term_label = recode(term, !!!labels_var),
-    # ordre d'affichage : variable de recherche principale en haut
     term_label = factor(term_label, levels = rev(labels_var))
   )
 
-# --- Graphique ---
 graphique_coefs_m5 <- ggplot(coefs_m5, aes(x = estimate, y = term_label, color = modele)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
   geom_pointrange(aes(xmin = conf.low, xmax = conf.high),
@@ -236,7 +239,7 @@ ggsave("sorties/Sorties_module_5/coefficients_m5_fies_hdds.png",
 cat("Graphique sauvegardé : sorties/Sorties_module_5/coefficients_m5_fies_hdds.png\n")
 
 
-# --- Extraction, réutilise la même fonction que pour le graphique précédent ---
+# --- Même logique d'extraction pour le graphique d'hétérogénéité ---
 extraire_coefs <- function(modele, nom_modele) {
   broom::tidy(modele, conf.int = TRUE) %>%
     filter(term != "(Intercept)") %>%
@@ -248,7 +251,6 @@ coefs_hetero <- bind_rows(
   extraire_coefs(reg_m5_hetero_irrig2, "Interaction irrigation")
 )
 
-# --- Labels lisibles, y compris pour les termes d'interaction ---
 labels_var_hetero <- c(
   producteur_mais                        = "Producteur de maïs",
   ln_revenu_mais                         = "ln(Revenu vente maïs)",
@@ -265,17 +267,14 @@ labels_var_hetero <- c(
 coefs_hetero <- coefs_hetero %>%
   mutate(
     term_label = recode(term, !!!labels_var_hetero),
-    # on distingue visuellement les termes d'interaction du reste
     type_terme = if_else(str_detect(term, ":"), "Terme d'interaction", "Effet principal")
   )
 
-# --- Ordre d'affichage : on garde les interactions en haut de chaque facette ---
 coefs_hetero <- coefs_hetero %>%
   group_by(modele) %>%
   mutate(term_label = fct_reorder(term_label, type_terme == "Terme d'interaction")) %>%
   ungroup()
 
-# --- Graphique en deux facettes ---
 graphique_hetero_m5 <- ggplot(coefs_hetero,
                               aes(x = estimate, y = term_label, color = type_terme)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
@@ -302,4 +301,3 @@ ggsave("sorties/Sorties_module_5/coefficients_m5_heterogeneite.png",
        graphique_hetero_m5, width = 11, height = 6, dpi = 300)
 
 cat("Graphique sauvegardé : sorties/Sorties_module_5/coefficients_m5_heterogeneite.png\n")
-saveRDS(coefs_m5, "sorties/tab_m5_fies.rds")

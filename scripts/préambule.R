@@ -1,8 +1,11 @@
 #=======================================================================
 #                            PREAMBULE
 #=======================================================================
+# Préambule : on regarde la filière maïs dans son contexte, à côté de tous
+# les autres produits (conso, superficie, ventes, commercialisation,
+# import/export FAOSTAT). Ça me sert plus tard à justifier le choix du maïs.
 
-# --- Fréquence de consommation, tous produits ----------------------------
+# --- Fréquence de consommation, tous produits ---
 cons <- s07b %>%
   mutate(label_produits = as_factor(s07bq01)) %>%
   filter(s07bq02 == 1) %>%
@@ -24,17 +27,19 @@ top10_cons_graph <- ggplot(top10_cons, aes(x = reorder(factor(label_produits), -
 ggsave("sorties/Sorties_preambule/top10_produits_cons.png", plot = top10_cons_graph, width = 10, height = 6, dpi = 300)
 
 
-# --- Superficie agricole, tous produits -----------------------------------
-# Surface cultivée par ménage, en hectares
+# --- Superficie agricole, tous produits ---
+library(haven)
 s16a_sup <- s16a %>%
-  mutate(sup_hectare = ifelse(s16aq09b == 2,
-                              s16aq09a / 10000,
-                              s16aq09a)) %>%
+  mutate(
+    s16aq09a = zap_labels(s16aq09a),
+    s16aq09b = zap_labels(s16aq09b),
+    sup_hectare = ifelse(s16aq09b == 2,
+                         s16aq09a / 10000,
+                         s16aq09a)) %>%
   group_by(hhid) %>%
   summarise(champ = sum(sup_hectare, na.rm = TRUE))
 
-# Poids de sondage, un par ménage
-poids_uniques <- s16c %>%
+poids_uniques <- s16a %>%
   distinct(hhid, hhweight)
 
 s16a_sup_pondere <- s16a_sup %>%
@@ -42,13 +47,20 @@ s16a_sup_pondere <- s16a_sup %>%
 
 total_pondere <- sum(s16a_sup_pondere$champ * s16a_sup_pondere$hhweight, na.rm = TRUE)
 
-# Part de chaque produit dans la superficie agricole totale
 s16_a_c <- s16c %>%
+  filter(!is.na(s16cq04)) %>%
   left_join(s16a_sup, by = "hhid") %>%
-  mutate(produit = as_factor(s16cq04)) %>%
+  mutate(
+    produit = as_factor(s16cq04),
+    part_culture = case_when(
+      is.na(s16cq08) & s16cq07 == 1 ~ 100,
+      TRUE ~ s16cq08
+    )
+  ) %>%
   group_by(produit) %>%
   summarise(
-    poids = round(sum(champ * s16cq08 * hhweight, na.rm = TRUE) / total_pondere, 2)
+    superficie = sum(champ * part_culture * hhweight / 100, na.rm = TRUE),
+    poids = round(100 * superficie / total_pondere, 2)
   ) %>%
   arrange(desc(poids))
 
@@ -65,7 +77,7 @@ top10_cul_graph <- ggplot(top10_cul, aes(x = reorder(produit, -poids), y = poids
 ggsave("sorties/Sorties_preambule/top10_produits_cultives.png", plot = top10_cul_graph, width = 10, height = 6, dpi = 300)
 
 
-# --- Ventes agricoles, tous produits --------------------------------------
+# --- Ventes agricoles, tous produits ---
 total_vente <- sum(s16d$s16dq06 * s16d$hhweight, na.rm = TRUE)
 
 ventes <- s16d %>%
@@ -88,7 +100,7 @@ top10_ventes_graph <- ggplot(top10_ventes, aes(x = reorder(produit, -part_vente)
 ggsave("sorties/Sorties_preambule/top10_produits_vendus.png", plot = top10_ventes_graph, width = 10, height = 6, dpi = 300)
 
 
-# --- Taux de commercialisation, tous produits -----------------------------
+# --- Taux de commercialisation, tous produits ---
 producteurs <- s16c %>%
   mutate(produit = as_factor(s16cq04)) %>%
   distinct(hhid, produit, hhweight)
@@ -121,14 +133,13 @@ top10_comm_graph <- ggplot(top10_comm, aes(x = reorder(produit, -taux_commercial
 ggsave("sorties/Sorties_preambule/taux_commercialisation.png", plot = top10_comm_graph, width = 10, height = 6, dpi = 300)
 
 
-# --- Conversion en kg des quantités consommées (S16D) ---------------------
+# --- Conversion en kg des quantités vendues (S16D) ---
 # Table de conversion phase 2, feuille nationale
 table_conversion_16d <- read_excel("donnee/Table de conversion phase 2.xlsx", sheet = "nationale") %>%
   filter(!is.na(poids)) %>%
   mutate(poids = as.numeric(gsub(",", ".", gsub(";", ".", gsub(" ", "", poids))))) %>%
   filter(!is.na(poids))
 
-# Labels des codes 1 à 7 de s16dq02b
 labels_unite_16d <- s16d %>%
   mutate(label_unite = as_factor(s16dq02b)) %>%
   distinct(s16dq02b, label_unite) %>%
@@ -136,17 +147,15 @@ labels_unite_16d <- s16d %>%
   rename(code_unite = s16dq02b)
 
 print(labels_unite_16d)
-# -> 1 Kilogramme | 2 Unité | 3 Yorouba | 4 Tine | 5 Sac moyen | 6 Sac gros | 7 Autres
+# 1 Kilogramme | 2 Unité | 3 Yorouba | 4 Tine | 5 Sac moyen | 6 Sac gros | 7 Autres
 
-# Correspondance label -> uniteID (+ tailleNom pour le Sac)
-# Yorouba, Tine, Autres absents de la table -> poids = NA
+# Yorouba, Tine et Autres n'existent pas dans la table -> poids NA pour ces unités
 correspondance_unite <- tibble(
   label_unite    = c("Kilogramme", "Unité", "Yorouba", "Tine", "Sac moyen", "Sac gros", "Autres"),
   uniteID_conv   = c(100,           147,     NA,        NA,     133,         133,        NA),
   tailleNom_conv = c(NA,            NA,      NA,        NA,     "Moyen",     "Grand",    NA)
 )
 
-# Poids moyen par unité/taille (approximation, poids variable selon le produit)
 poids_par_unite <- table_conversion_16d %>%
   mutate(tailleNom_std = str_to_title(trimws(tailleNom))) %>%
   filter(uniteID %in% na.omit(correspondance_unite$uniteID_conv)) %>%
@@ -154,7 +163,6 @@ poids_par_unite <- table_conversion_16d %>%
   group_by(uniteID, tailleNom_std) %>%
   summarise(poids_g = mean(poids, na.rm = TRUE), .groups = "drop")
 
-# Table finale label -> poids en g/kg
 correspondance_unite_poids <- correspondance_unite %>%
   left_join(poids_par_unite,
             by = c("uniteID_conv" = "uniteID", "tailleNom_conv" = "tailleNom_std")) %>%
@@ -163,7 +171,6 @@ correspondance_unite_poids <- correspondance_unite %>%
 
 print(correspondance_unite_poids)
 
-# Application à S16D
 s16d_kg <- s16d %>%
   mutate(produit = as_factor(s16dq01),
          label_unite = as_factor(s16dq02b)) %>%
@@ -173,7 +180,6 @@ s16d_kg <- s16d %>%
 
 glimpse(s16d_kg)
 
-# Part de chaque produit dans la consommation totale, en kg
 total_cons_kg <- sum(s16d_kg$q_cons_kg * s16d_kg$hhweight, na.rm = TRUE)
 
 cons_cul_kg <- s16d_kg %>%
@@ -196,13 +202,11 @@ top10_cons_cul_kg_graph <- ggplot(top10_cons_cul_kg, aes(x = reorder(produit, -p
 ggsave("sorties/Sorties_preambule/top10_produits_consommes_kg.png", plot = top10_cons_cul_kg_graph, width = 10, height = 6, dpi = 300)
 
 
-# --- Importations / exportations, tous produits (FAOSTAT 2021) -----------
+# --- Import / export, tous produits (FAOSTAT 2021) ---
 faostat <- read_csv("donnee/FAOSTAT_data_import_export_crops.csv", show_col_types = FALSE)
 
-# Ne garder que les chiffres officiels
 faostat <- faostat %>% filter(Flag == "A")
 
-# Part en quantité (tonnes), têtes d'animaux vivants exclues
 import_qty <- faostat %>%
   filter(Element == "Import quantity", Unit == "t") %>%
   group_by(Item) %>%
@@ -217,7 +221,6 @@ export_qty <- faostat %>%
   mutate(part_export_qty = round(100 * qte / sum(qte, na.rm = TRUE), 2)) %>%
   arrange(desc(part_export_qty))
 
-# Part en valeur (1000 USD)
 import_val <- faostat %>%
   filter(Element == "Import value", Unit == '1000 USD') %>%
   group_by(Item) %>%
@@ -232,7 +235,6 @@ export_val <- faostat %>%
   mutate(part_export_val = round(100 * val / sum(val, na.rm = TRUE), 2)) %>%
   arrange(desc(part_export_val))
 
-# Top 10 + graphiques
 top10_import_qty <- import_qty %>% slice_head(n = 10)
 top10_export_qty <- export_qty %>% slice_head(n = 10)
 top10_import_val <- import_val %>%

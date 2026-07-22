@@ -1,52 +1,110 @@
 #=======================================================================
 #          MODULE 3 : ANALYSE DE LA PRODUCTION ET DES RENDEMENTS
 #=======================================================================
+# Module 3 : production et rendements du maïs.
 #
-# Carnet de decisions Module 3 (a documenter dans le rapport)
+#   - La table de conversion "phase 2.xlsx" est REMPLACÉE par la base officielle
+#     EHCVM  ehcvm_nsu_bfa2021.dta  (poids calibrés par strate region×milieu).
+#   - Le mapping s16cq16b -> uniteID est COMPLET (Yorouba, Tine désormais couverts,
+#     alors que l'ancien script les laissait en NA -> 30-40 % de pertes).
+#   - La Branche B ("récolte en cours") ne prend pas s16cq16c tel quel :
+#     cette variable est incohérente (ratios c/a de 0 à 1249, NA pour les kg).
+#     On RECONSTRUIT la quantité en kg depuis s16cq16a × poids NSU.
+#
+# Carnet de décisions Module 3 (à jour)
 # -----------------------------------------------------------
-# 1. s16cq11 = "Avez-vous FINI la récolte de cette culture ?"
-#      -> 1 [Oui]  = récolte TERMINÉE  (91 % des ménages maïs)
-#      -> 2 [Non]  = récolte EN COURS  (9 %)
-#      Les variables q16a/b/c ne sont renseignées QUE pour "Non".
-# 2. s16cq16c = "Estimation Quantité totale UML en kg" -> déjà en kg,
-#      PAS un facteur de conversion. Ne pas diviser par part récoltée.
-# 3. Production "récolte terminée" reconstituée depuis S16D :
-#      somme(conso + don + vente + stock) en kg.
-#      s16dq05c (estimation en kg de la vente) utilisée prioritairement.
-# 4. Conversion des unités locales (conso/don/stock) via la table de
-#      conversion phase 2, matchant (produitID, uniteID), moyennée sur
-#      les tailles (S16D ne déclare pas de tailleID).
-#      produitID dépend de l'état : épi = 5, grain = 6.
-#      Unitions non couvertes (Yorouba=3, Tine=4, Autres=7) -> NA,
-#      environ 30-40 % des observations -> sous-estimation à documenter.
-# 5. Micro-parcelles (< 0.05 ha) exclues : non représentatives des
-#      rendements paysans (jardins de case).
+# 1. s16cq11 = "Avez-vous FINI la récolte ?" -> 1=terminée, 2=en cours.
+#      q16a/b/c ne sont renseignées QUE pour "en cours" (s16cq11==2).
+# 2. Production "récolte terminée" reconstituée depuis S16D :
+#      somme(conso + don + vente + stock) convertie en kg via la NSU.
+#      s16dq05c (estimation kg de la vente) utilisée prioritairement.
+# 3. Conversion des unités locales via la NSU, en joignant sur la strate
+#      du ménage (region×milieu reconstruit depuis ehcvm_welfare_2b).
+#      produitID (codpr) dépend de l'état : épi = 5, grain = 6.
+# 4. Branche B : quantité = s16cq16a × poids_median(codpr, uniteID, strate)/1000.
+#      s16cq16c est explicitement ÉCARTÉE (variable de contrôle incohérente).
+# 5. Micro-parcelles (< 0.05 ha) exclues.
 # 6. Plafond agronomique 5 000 kg/ha + winsorisation p1/p99.
-# 7. Rendement national estimé ~750 kg/ha vs ~1 700 FAOSTAT (-56 %),
-#      écart attendu : récolte partielle (branche "en cours"), unités
-#      non converties, et production S16D partielle à l'instant de
-#      l'enquête.
 
 # --- Référentiel de codes produit -------------------------------------------
-# S16C et S16D partagent le même référentiel : "4" = Maïs.
-# Ce référentiel est DIFFERENT de celui de S07B (codes_mais <- c(5,6,12,13)
-# utilisé uniquement pour la consommation, Module 1). Ne pas confondre.
+# S16C et S16D : "4" = Maïs. (Différent de S07B utilisé pour la conso, Module 1.)
 codes_mais_s16c <- 4
 
 # Packages nécessaires
 library(httr)
+library(haven)
 library(jsonlite)
 library(purrr)
 library(dplyr)
 library(fixest)
 library(sf)
 library(geodata)
+library(readxl)
+library(labelled)
 
-# Pré-requis : préambule.R et module1 déjà sourcés depuis main.R.
+# Pré-requis : préambule.R et module1 déjà sourcés depuis main.R
+# (les objets s16a, s16b, s16c, s16d, s00, s01, s02_me, hhweight doivent exister).
 
-# ---------------------------------------------------------------------
+# =====================================================================
+# 0. PRÉPARATION DE LA TABLE DE CONVERSION NSU
+#    Poids en grammes par (codpr, uniteID, tailleID, strate).
+#    La strate = region*10 + milieu (13 régions × 2 milieux = 26 strates).
+# =====================================================================
+nsu_conv <- read_dta("donnee/base_burkina/ehcvm_nsu_bfa2021.dta") %>%
+  filter(!is.na(poids_moyen)) %>%
+  mutate(strate = region * 10 + milieu)
+
+# Agrégation sur la taille : S16C/S16D ne déclarent pas de tailleID,
+# on prend la moyenne des tailles disponibles
+nsu_mais <- nsu_conv %>%
+  filter(codpr %in% c(5, 6)) %>%                      # 5 = épi, 6 = grain
+  group_by(codpr, uniteID, strate) %>%
+  summarise(poids_moyen_g = median(poids_moyen, na.rm = TRUE), .groups = "drop") %>%
+  mutate(poids_moyen_kg = poids_moyen_g / 1000)
+
+# Filet national : si une strate manque pour un couple (codpr, uniteID),
+# on complète par la moyenne nationale (toutes strates confondues).
+nsu_mais_national <- nsu_mais %>%
+  group_by(codpr, uniteID) %>%
+  summarise(poids_moyen_kg_nat = median(poids_moyen_kg, na.rm = TRUE),
+            .groups = "drop")
+
+nsu_mais <- nsu_mais %>%
+  left_join(nsu_mais_national, by = c("codpr", "uniteID")) %>%
+  mutate(poids_moyen_kg = coalesce(poids_moyen_kg, poids_moyen_kg_nat)) %>%
+  select(-poids_moyen_kg_nat)
+
+# Correspondance COMPLÈTE code-unité EHCVM (1-7) -> uniteID NSU.
+# Cœur de l'amélioration : Yorouba (3) et Tine (4) sont désormais couverts.
+#   1=Kg ->100 ; 2=Unité(ne sait pas)->exclu ; 3=Yorouba->149 ; 4=Tine->145 ;
+#   5=Sac moyen->138 (50 kg) ; 6=Sac gros->135 (100 kg) ; 7=Autres->recodage.
+corresp_unite <- tibble(
+  code_unite   = c( 1,    3,    4,    5,    6),
+  uniteID_nsu  = c(100,  149,  145,  138,  135)
+)
+
+# Recodage des "Autres" (code 7) via le champ texte _autre.
+# Mapping établi à partir du dictionnaire NSU (cf. analyse préalable) :
+#   boîte/boites/botes/boîte moyen -> 107 ; panier -> 128 ; grand tas -> 143 ;
+#   sac petit -> 137 ; caisses -> 114 ; sachet de 25f -> 139 ;
+#   tonne/tonnes -> déjà en kg (100) ; reste (grenier, 0, ne sais pas...) -> NA.
+recoder_autre <- function(texte) {
+  t <- tolower(as.character(texte))
+  case_when(
+    grepl("bo[îi]te|botes|boites", t)              ~ 107L,
+    grepl("panier", t)                             ~ 128L,
+    grepl("grand tas", t)                          ~ 143L,
+    grepl("sac petit", t)                          ~ 137L,
+    grepl("caisse", t)                             ~ 114L,
+    grepl("sachet", t)                             ~ 139L,
+    grepl("tonne", t)                              ~ 100L,  # déjà en kg
+    TRUE                                           ~ NA_integer_
+  )
+}
+
+# =====================================================================
 # 1. SURFACE DE LA PARCELLE (S16A) + PART PLANTÉE EN MAÏS
-# ---------------------------------------------------------------------
+# =====================================================================
 parcelles <- s16a %>%
   transmute(
     hhid, s16aq02, s16aq03,
@@ -57,7 +115,6 @@ parcelles <- s16a %>%
   ) %>%
   distinct(hhid, s16aq02, s16aq03, .keep_all = TRUE)
 
-# Part de la parcelle consacrée au maïs (S16C q07 = culture pure ; q08 = %)
 surface_mais <- s16c %>%
   filter(s16cq04 %in% codes_mais_s16c) %>%
   left_join(parcelles, by = c("hhid", "s16cq02" = "s16aq02",
@@ -70,64 +127,63 @@ surface_mais <- s16c %>%
   select(hhid, s16cq02, s16cq03, surface_mais_ha,
          s16cq11, s16cq12, s16cq15)
 
-# Surface totale maïs par ménage (S16D = 1 ligne / hhid / culture)
 surface_mais_hh <- surface_mais %>%
   group_by(hhid) %>%
   summarise(surface_mais_ha = sum(surface_mais_ha, na.rm = TRUE),
             .groups = "drop")
 
-# ---------------------------------------------------------------------
-# 2. TABLE DE CONVERSION EN kg (produitID, uniteID)
-#    Moyennée sur les tailles car S16D ne déclare pas la tailleID.
-# ---------------------------------------------------------------------
-conv_raw <- read_excel("donnee/Table de conversion phase 2.xlsx",
-                       sheet = "nationale") %>%
-  mutate(poids = as.numeric(gsub(",", ".",
-                                 gsub(";", ".",
-                                      gsub(" ", "", poids))))) %>%
-  filter(!is.na(poids), produitID %in% c(5, 6))
+# =====================================================================
+# 1b. STRATE DE CHAQUE MÉNAGE (region×milieu) pour la jointure NSU
+#     region/milieu proviennent d'ehcvm_welfare_2b (jointure sur hhid).
+# =====================================================================
+strate_hh <- ehcvm_welfare_2b %>%
+  select(hhid, region, milieu) %>%
+  mutate(strate = region * 10 + milieu)
 
-conv_mais <- conv_raw %>%
-  group_by(produitID, uniteID) %>%
-  summarise(poids_g = mean(poids, na.rm = TRUE), .groups = "drop") %>%
-  mutate(poids_kg = poids_g / 1000)
-
-# Correspondance code-unité S16D (1-7) -> uniteID table de conversion.
-# Yorouba (3), Tine (4), Autres (7) : absents de la table -> NA.
-# Sac moyen (5) -> 138 (Sac 50 kg) ; Sac gros (6) -> 135 (Sac 100 kg).
-corresp_unite <- tibble(
-  code_unite_16d = c(1, 2, 3, 4, 5, 6, 7),
-  uniteID_conv   = c(100, NA, NA, NA, 138, 135, NA)
-)
-
-# ---------------------------------------------------------------------
-# 3. FONCTION DE CONVERSION kg D'UNE QUANTITÉ S16D
-#    L'état du produit (épi vs grain) détermine le produitID.
-# ---------------------------------------------------------------------
-convertir_kg_16d <- function(df, var_qte, var_unite, var_etat) {
+# =====================================================================
+# 2. FONCTION DE CONVERSION kg (version NSU, calée sur la strate)
+#    L'état du produit (épi vs grain) détermine le codpr (5 vs 6).
+# =====================================================================
+convertir_kg_nsu <- function(df, var_qte, var_unite, var_etat, var_autre = NULL) {
   tmp <- df %>%
     mutate(
       .qte       = .data[[var_qte]],
       code_unite = .data[[var_unite]],
       etat       = .data[[var_etat]],
-      produitID  = case_when(
+      # Recodage des "Autres" (code 7) via le texte, si dispo
+      uniteID = case_when(
+        code_unite %in% corresp_unite$code_unite ~
+          corresp_unite$uniteID_nsu[match(code_unite, corresp_unite$code_unite)],
+        code_unite == 7 & !is.null(var_autre)     ~
+          recoder_autre(.data[[var_autre]]),
+        TRUE ~ NA_real_
+      ),
+      codpr = case_when(
         etat == 1            ~ 5,   # Épi
         etat %in% c(2, 3, 4) ~ 6,   # Grain / décortiqué / non-décortiqué
         TRUE                 ~ NA_real_)
     ) %>%
-    left_join(corresp_unite,
-              by = c("code_unite" = "code_unite_16d")) %>%
-    left_join(conv_mais,
-              by = c("produitID", "uniteID_conv" = "uniteID"))
-  tmp$.qte * tmp$poids_kg
+    left_join(strate_hh, by = "hhid") %>%
+    left_join(nsu_mais, by = c("codpr", "uniteID", "strate"))
+  
+  # Si l'unité est déjà le kilogramme (uniteID 100, codpr 6), le poids NSU
+  # est 1 kg : la quantité déclarée est prise telle quelle.
+  tmp$.qte * tmp$poids_moyen_kg
 }
 
 # ---------------------------------------------------------------------
-# 4. BRANCHE A : MÉNAGES "RÉCOLTE TERMINÉE" (s16cq11 == 1, ~91 %)
-#    Production = somme des usages déclarés en S16D
-#    (conso + don + vente + stock), chacun converti en kg.
-#    La vente s16dq05c (kg directs) est utilisée prioritairement.
+# 3. SURCHARGE : wrapper de conversion S16D (passe le bon champ _autre)
 # ---------------------------------------------------------------------
+convertir_kg_16d <- function(df, var_qte, var_unite, var_etat) {
+  var_autre <- paste0(var_unite, "_autre")
+  if (!var_autre %in% names(df)) var_autre <- NULL
+  convertir_kg_nsu(df, var_qte, var_unite, var_etat, var_autre)
+}
+
+# =====================================================================
+# 4. BRANCHE A : MÉNAGES "RÉCOLTE TERMINÉE" (s16cq11 == 1, ~91 %)
+#    Production = somme des usages déclarés en S16D, convertis en kg.
+# =====================================================================
 menages_fini <- s16c %>%
   filter(s16cq04 %in% codes_mais_s16c, s16cq11 == 1) %>%
   distinct(hhid)
@@ -154,7 +210,6 @@ s16d_mais_fini <- s16d %>%
   ) %>%
   ungroup()
 
-# Diagnostic de couverture
 cat("Couverture de la conversion par poste (récolte terminée) :\n")
 summary(s16d_mais_fini[c("conso_kg", "don_kg", "vente_kg", "stock_kg")])
 
@@ -167,18 +222,22 @@ production_fini <- s16d_mais_fini %>%
 cat("Ménages 'récolte terminée' exploitables (production reconstituée) :",
     nrow(production_fini), "sur", nrow(menages_fini), "\n")
 
-# ---------------------------------------------------------------------
+# =====================================================================
 # 5. BRANCHE B : MÉNAGES "RÉCOLTE EN COURS" (s16cq11 == 2)
-#    s16cq16c = "Estimation Quantité totale UML en kg" -> déjà en kg.
-#    ATTENTION : ne pas diviser par la part récoltée.
-# ---------------------------------------------------------------------
+#    HARMONISATION NSU : on convertit s16cq16a (quantité en unité locale)
+#    via la NSU. s16cq16c est ÉCARTÉE (variable de contrôle incohérente).
+# =====================================================================
 production_encours <- s16c %>%
   filter(s16cq04 %in% codes_mais_s16c,
-         s16cq11 == 2, !is.na(s16cq16c)) %>%
+         s16cq11 == 2, !is.na(s16cq16a)) %>%
+  mutate(
+    qte_kg_nsu = convertir_kg_nsu(., "s16cq16a", "s16cq16b", "s16cq16d",
+                                  "s16cq16b_autre")
+  ) %>%
   left_join(surface_mais_hh, by = "hhid") %>%
   mutate(
-    production_kg     = s16cq16c,
-    source_production = "S16C - récolte en cours"
+    production_kg     = qte_kg_nsu,
+    source_production = "S16C - récolte en cours (NSU)"
   ) %>%
   filter(is.finite(surface_mais_ha), surface_mais_ha > 0,
          is.finite(production_kg),  production_kg > 0)
@@ -186,9 +245,9 @@ production_encours <- s16c %>%
 cat("Ménages 'récolte en cours' exploitables :", nrow(production_encours),
     "\n")
 
-# ---------------------------------------------------------------------
+# =====================================================================
 # 6. FUSION + RENDEMENT
-# ---------------------------------------------------------------------
+# =====================================================================
 production_mais <- bind_rows(
   production_fini %>%
     select(hhid, hhweight, surface_mais_ha, production_kg,
@@ -203,15 +262,9 @@ cat("Total ménages producteurs de maïs exploitables :",
     nrow(production_mais), "\n")
 print(table(production_mais$source_production))
 
-# ---------------------------------------------------------------------
+# =====================================================================
 # 7. FILTRAGE AGRONOMIQUE + WINSORISATION p1/p99
-#    Le maïs pluvial au Burkina Faso ne dépasse pas ~5 t/ha en
-#    pratique paysanne. On applique :
-#      a) seuil minimal de surface >= 0.05 ha (micro-parcelles
-#         / jardins de case non représentatifs) ;
-#      b) plafond agronomique rendement <= 5 000 kg/ha ;
-#      c) winsorisation p1/p99 sur le reste.
-# ---------------------------------------------------------------------
+# =====================================================================
 production_filtre <- production_mais %>%
   filter(surface_mais_ha >= 0.05,
          rendement_kg_ha <= 5000)
@@ -226,9 +279,7 @@ production_mais_analyse <- production_filtre %>%
 cat("Observations après filtrage :", nrow(production_mais_analyse),
     "sur", nrow(production_mais), "brutes\n")
 
-# ---------------------------------------------------------------------
 # 8. BILAN NATIONAL
-# ---------------------------------------------------------------------
 bilan_mais <- production_mais_analyse %>%
   summarise(
     observations = n(),
@@ -242,11 +293,7 @@ bilan_mais <- production_mais_analyse %>%
     rendement_median_kg_ha = median(rendement_kg_ha, na.rm = TRUE))
 print(bilan_mais)
 
-# ---------------------------------------------------------------------
-# 9. VALIDATION FAOSTAT
-#    Le rendement FAOSTAT du maïs au BF est ~1 700 kg/ha
-#    (1,7 t/ha campagne 2021). Source : FAOSTAT, Module 1.
-# ---------------------------------------------------------------------
+# --- 9. VALIDATION FAOSTAT ------
 rendement_faostat_kg_ha <- 1520.8
 cat(sprintf("Rendement national estimé : %.0f kg/ha\n",
             bilan_mais$rendement_national_kg_ha))
@@ -255,9 +302,17 @@ cat(sprintf("Rendement FAOSTAT (référence) : %.0f kg/ha\n",
 cat(sprintf("Écart : %+.1f %%\n",
             100 * (bilan_mais$rendement_national_kg_ha / rendement_faostat_kg_ha - 1)))
 
-# ---------------------------------------------------------------------
-# 10. BILAN PAR SOURCE (diagnostic de robustesse)
-# ---------------------------------------------------------------------
+# --- 11. Pertes (analyse séparée, demandée par le sujet p.9) ---
+pertes <- s16c %>%
+  filter(s16cq04 %in% codes_mais_s16c) %>%
+  mutate(perte_pct = coalesce(as.numeric(zap_labels(s16cq15)), 0)) %>%
+  summarise(
+    n_total = n(),
+    n_perte_totale = sum(as.numeric(zap_labels(s16cq11)) == 3, na.rm = TRUE),
+    perte_moyenne_pct = mean(perte_pct, na.rm = TRUE))
+print(pertes)
+
+# Bilan par source de reconstitution de la production (utilisé par le 1er graphique)
 bilan_mais_source <- production_mais_analyse %>%
   group_by(source_production) %>%
   summarise(
@@ -268,21 +323,7 @@ bilan_mais_source <- production_mais_analyse %>%
     .groups = "drop")
 print(bilan_mais_source)
 
-# ---------------------------------------------------------------------
-# 11. PERTES (analyse séparée, comme demandé par le sujet p.9)
-# ---------------------------------------------------------------------
-pertes <- s16c %>%
-  filter(s16cq04 %in% codes_mais_s16c) %>%
-  mutate(perte_pct = coalesce(as.numeric(s16cq15), 0)) %>%
-  summarise(
-    n_total = n(),
-    n_perte_totale = sum(as.numeric(s16cq11) == 3, na.rm = TRUE),
-    perte_moyenne_pct = mean(perte_pct, na.rm = TRUE))
-print(pertes)
-
-# ---------------------------------------------------------------------
-# 12. GRAPHIQUES
-# ---------------------------------------------------------------------
+# --- 12. Graphiques ---
 ggsave("sorties/sorties_module_3/production_mais.png",
        ggplot(bilan_mais_source,
               aes(reorder(source_production, production_tonnes),
@@ -303,12 +344,10 @@ ggsave("sorties/sorties_module_3/rendements_mais.png",
          theme(axis.text.x = element_text(angle = 20, hjust = 1)),
        width = 9, height = 6, dpi = 300)
 
-# ---------------------------------------------------------------------
-# 13. INTRANTS DES MÉNAGES PRODUCTEURS DE MAÏS (S16B)
-#      S16B est renseigné au niveau ménage, pas au niveau culture :
-#      ces intrants décrivent les ménages producteurs de maïs, pas des
-#      intrants exclusivement dédiés au maïs (limite à mentionner).
-# ---------------------------------------------------------------------
+# --- 13. Intrants des ménages producteurs de maïs (S16B) ---
+# S16B est renseigné au niveau ménage, pas au niveau culture : ces intrants
+# décrivent les ménages producteurs de maïs, pas des intrants exclusivement
+# dédiés au maïs (limite à mentionner dans le rapport).
 menages_mais <- production_mais_analyse %>%
   distinct(hhid, hhweight)
 
@@ -334,50 +373,51 @@ ggsave("sorties/sorties_module_3/intrants_producteurs_mais.png",
               x = "Intrant", y = "Part des utilisations déclarées (%)"),
        width = 9, height = 6, dpi = 300)
 
-# ln(Rendement_ij) = α + β1 Intrants_ij + β2 Semences_ij + β3 Irrigation_ij
-#                     + β4 Education_i + γj (FE grappe) + ε_ij
+# Modèle : ln(Rendement) = a + b1.Intrants + b2.Semences + b3.Irrigation
+#          + b4.Education + effets fixes grappe
 
 menages_mais_reg <- production_mais_analyse %>% distinct(hhid, hhweight)
 
-# --- 1. Intrants : valeur totale des intrants utilisés (S16B) --------------
+# Valeur totale des intrants utilisés (S16B)
 intrants_valeur_hh <- s16b %>%
   semi_join(menages_mais_reg, by = "hhid") %>%
   filter(s16bq02 == 1) %>%
   group_by(hhid) %>%
   summarise(valeur_intrants_fcfa = sum(s16bq09c, na.rm = TRUE), .groups = "drop")
 
-# --- 2. Semences améliorées (S16C, s16cq09 : 1=Locales confirmé, 2=Améliorées confirmé) --
+# Semences améliorées (S16C, s16cq09 : 1=Locales, 2=Améliorées)
 semence_hh <- s16c %>%
   filter(s16cq04 %in% codes_mais_s16c) %>%
   semi_join(menages_mais_reg, by = "hhid") %>%
   group_by(hhid) %>%
-  summarise(semence_amelioree = as.integer(any(s16cq09 == 2, na.rm = TRUE)),
+  summarise(semence_amelioree = as.integer(any(zap_labels(s16cq09) == 2, na.rm = TRUE)),
             .groups = "drop")
 
-# --- 3. Irrigation (S16A, s16aq17 : source d'eau de la parcelle, confirmé) --
+# Irrigation (S16A, s16aq17). 4=Pluviale ; 1,2,3,5=Irrigué ; 6=Autre.
+# Codes numériques utilisés directement, plus fiable que les labels accentués.
 irrigation_hh <- s16a %>%
   semi_join(menages_mais_reg, by = "hhid") %>%
-  mutate(source_eau = as_factor(s16aq17),
-         irr_parcelle = case_when(
-           source_eau == "Pluviale" ~ 0L,
-           source_eau %in% c("Irrigation, propre puits", "Irrigation canal",
-                             "Irrigation ruisseau", "Marais/\"wetlands\"") ~ 1L,
-           TRUE ~ NA_integer_)) %>%
+  mutate(irr_parcelle = case_when(
+    zap_labels(s16aq17) == 4 ~ 0L,
+    zap_labels(s16aq17) %in% c(1, 2, 3, 5) ~ 1L,
+    TRUE ~ NA_integer_)) %>%
   group_by(hhid) %>%
   summarise(irrigation = as.integer(any(irr_parcelle == 1, na.rm = TRUE)),
             .groups = "drop")
 
-# --- 4. Éducation du chef de ménage (S1 + S02, confirmé) -------------------
+# Éducation du chef de ménage (S01 + S02). Je filtre sur le code numérique
+# (1 = chef) et pas sur le label, car les comparaisons de chaînes accentuées
+# échouent silencieusement selon l'encodage (Windows vs UTF-8).
 chef_menage <- s01 %>%
-  filter(as_factor(s01q02) == "Chef de ménage") %>%
+  filter(zap_labels(s01q02) == 1) %>%
   distinct(hhid, pid)
 
 education_hh <- chef_menage %>%
   left_join(s02_me %>% select(hhid, pid, s02q03), by = c("hhid", "pid")) %>%
   mutate(
     education_scolarise = case_when(
-      s02q03 == 1 ~ 1L,   # Oui, a fait/fait des études
-      s02q03 == 2 ~ 0L,   # Non, jamais scolarisé
+      zap_labels(s02q03) == 1 ~ 1L,
+      zap_labels(s02q03) == 2 ~ 0L,
       TRUE ~ NA_integer_
     )
   ) %>%
@@ -386,12 +426,9 @@ education_hh <- chef_menage %>%
 cat("Chefs de ménage sans info exploitable sur l'éducation :",
     sum(is.na(education_hh$education_scolarise)), "sur", nrow(education_hh), "\n")
 
-# --- 5. Grappe (déjà présente nativement dans s16c) -------------------------
 grappe_hh <- s16c %>% distinct(hhid, grappe)
 
-#=======================================================================
-# ASSEMBLAGE DE LA TABLE DE RÉGRESSION
-#=======================================================================
+# --- Assemblage de la table de régression ---
 data_reg_mais <- production_mais_analyse %>%
   mutate(ln_rendement = log(rendement_kg_ha)) %>%
   left_join(intrants_valeur_hh, by = "hhid") %>%
@@ -410,9 +447,7 @@ data_reg_mais <- production_mais_analyse %>%
 cat("Observations disponibles pour la régression :", nrow(data_reg_mais),
     "sur", nrow(production_mais_analyse), "ménages producteurs de maïs retenus\n")
 
-#=======================================================================
-# RÉGRESSION OLS AVEC EFFETS FIXES DE GRAPPE ET ERREURS ROBUSTES PONDÉRÉES
-#=======================================================================
+# --- Régression OLS, effets fixes de grappe, erreurs robustes pondérées ---
 reg_rendement_mais <- feols(
   ln_rendement ~ ln_intrants + semence_amelioree + irrigation + education_scolarise | grappe,
   data    = data_reg_mais,
@@ -421,7 +456,7 @@ reg_rendement_mais <- feols(
 )
 summary(reg_rendement_mais)
 
-# Spécification sans effets fixes de grappe, pour comparaison/robustesse
+# Version sans effets fixes de grappe, pour comparaison
 reg_rendement_mais_sansFE <- feols(
   ln_rendement ~ ln_intrants + semence_amelioree + irrigation + education_scolarise,
   data = data_reg_mais, weights = ~hhweight
@@ -430,7 +465,7 @@ reg_rendement_mais_sansFE <- feols(
 etable(reg_rendement_mais, reg_rendement_mais_sansFE,
        headers = c("Avec FE grappe", "Sans FE grappe"))
 
-# 1. Rendement moyen par grappe
+# --- Carte des rendements par grappe ---
 rendement_grappe <- production_mais_analyse %>%
   left_join(grappe_hh, by = "hhid") %>%
   group_by(grappe) %>%
@@ -441,7 +476,6 @@ rendement_grappe <- production_mais_analyse %>%
     .groups = "drop"
   )
 
-# 2. Coordonnées GPS moyennes par grappe
 gps_grappe <- s00 %>%
   filter(!is.na(GPS__Latitude), !is.na(GPS__Longitude)) %>%
   group_by(grappe) %>%
@@ -449,23 +483,25 @@ gps_grappe <- s00 %>%
             lon = mean(GPS__Longitude, na.rm = TRUE),
             .groups = "drop")
 
-# 3. Fusion
 rendement_geo <- rendement_grappe %>%
   inner_join(gps_grappe, by = "grappe") %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
 
 cat("Grappes cartographiables :", nrow(rendement_geo), "sur", nrow(rendement_grappe), "\n")
 
-# 4. Fond de carte
 bfa_shp <- gadm(country = "BFA", level = 1, path = tempdir()) %>% st_as_sf()
 
-# 5. Carte
 carte_rendement_mais <- ggplot() +
   geom_sf(data = bfa_shp, fill = "grey95", color = "grey60") +
   geom_sf(data = rendement_geo,
           aes(size = n_menages, color = rendement_moyen_kg_ha),
           alpha = 0.75) +
-  scale_color_viridis_c(name = "Rendement\n(kg/ha)", option = "viridis") +
+  scale_color_viridis_c(
+    name = "Rendement\n(kg/ha)",
+    option = "viridis",
+    limits = c(0, 2000),
+    breaks = seq(500, 2000, 500)
+  ) +
   scale_size_continuous(name = "Nb. ménages\nproducteurs", range = c(1, 6)) +
   theme_minimal() +
   labs(title = "Rendement moyen du maïs par grappe — Burkina Faso (2021)",
@@ -475,8 +511,7 @@ carte_rendement_mais <- ggplot() +
 
 ggsave("sorties/sorties_module_3/carte_rendement_mais.png", carte_rendement_mais, width = 10, height = 8, dpi = 300)
 
-#--- Rendement + Pluie ------------------------
-
+# --- Rendement vs pluviométrie (NASA POWER) ---
 get_pluie_nasa_power <- function(lon, lat) {
   url <- "https://power.larc.nasa.gov/api/temporal/daily/point"
   res <- GET(url, query = list(
@@ -498,6 +533,7 @@ points_grappes <- rendement_geo %>%
   st_drop_geometry() %>%
   select(grappe, lon, lat)
 
+# Je mets en cache localement pour ne pas re-taper l'API à chaque run
 if (file.exists("pluie_grappe_nasapower.rds")) {
   cat("Chargement de la pluviométrie depuis le fichier local pluie_grappe_nasapower.rds...\n")
   pluie_grappe <- readRDS("pluie_grappe_nasapower.rds")
@@ -539,4 +575,3 @@ summary(mod_pluie)
 # Sauvegarde des objets RDS
 saveRDS(bilan_mais, "sorties/tab_m3_rendement.rds")
 saveRDS(production_mais_analyse, "sorties/production_mais_analyse.rds")
-

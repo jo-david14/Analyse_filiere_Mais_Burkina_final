@@ -35,6 +35,7 @@ library(broom)
 for (d in c("sorties",
             "sorties/Sorties_preambule",
             "sorties/Sorties_module_1",
+            "sorties/Sorties_module_2",
             "sorties/sorties_module_3",
             "sorties/Sorties_module_4",
             "sorties/Sorties_module_5",
