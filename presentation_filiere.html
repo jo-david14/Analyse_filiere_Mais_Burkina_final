@@ -57,6 +57,12 @@ Données nationales EHCVM 2021 (7 176 ménages, 600 grappes, 13 régions du Burk
 ]
 ]
 
+
+---
+
+class: inverse, center, middle
+
+# Choix methodologiques
 ---
 
 class: inverse, center, middle
@@ -366,7 +372,7 @@ class: inverse, center, middle
 
 .pull-left[
 .resultat[
-**Lecture de la carte :** La majorité des grappes affichent des rendements modérés à faibles (teintes violettes, autour de 500-1 000 kg/ha), avec une **forte hétérogénéité intra-nationale** : coexistence de ménages à faible rendement et de foyers plus performants au sein d'une même zone. Les rendements les plus élevés (points jaunes/verts) se concentrent davantage dans l'**Est du pays**, avec toutefois une proportion non négligeable de bons rendements également observée dans la **région Centre**.
+**Lecture de la carte :** La majorité des grappes affichent des rendements modérés à faibles (teintes violettes, autour de 500 kg/ha), avec une **forte hétérogénéité intra-nationale** : coexistence de ménages à faible rendement et de foyers plus performants au sein d'une même zone. Les rendements les plus élevés (points jaunes/verts) se concentrent davantage dans l'**Ouest du pays**, avec toutefois une proportion non négligeable de bons rendements également observée dans la **région Centre**.
 ]
 ]
 .pull-right[
@@ -374,6 +380,28 @@ class: inverse, center, middle
 ### Variabilité spatiale par grappe
 &lt;img src="sorties/sorties_module_3/carte_rendement_mais.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
 ]
+]
+
+---
+
+# Analyse des déterminants du rendement maïs
+
+.pull-left[
+.center[
+### Influence des divers variables
+&lt;img src="sorties/regression_determinants_rendement.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
+]]
+
+
+.pull-right[
+.resultat[
+Seuls le niveau d'éducation du chef de ménage (+17,2 %) et, de façon plus surprenante, la semence améliorée (-22,4 %) montrent un effet marginalement significatif sur le rendement (seuil de 10 %) ; les intrants et l'irrigation, bien que positivement associés au rendement, ne ressortent pas comme statistiquement significatifs dans ce modèle.
+]]
+
+
+.resultat[
+Le modèle capte 23,7 % de la variance globale du rendement, mais seulement 1,4 % une fois les effets fixes contrôlés — signe que les variables individuelles (intrants, semences, irrigation, éducation) expliquent peu la variation résiduelle du rendement, l'essentiel étant absorbé par les effets géographiques.
+
 ]
 
 ---
@@ -401,26 +429,6 @@ Chaque millimètre supplémentaire de pluie est associé à une augmentation moy
 
 ---
 
-# Analyse des déterminants du rendement maïs
-
-.pull-left[
-.center[
-### Influence des divers variables
-&lt;img src="sorties/regression_determinants_rendement.png" alt="" width="100%" style="display: block; margin: auto;" /&gt;
-]]
-
-
-.pull-right[
-.resultat[
-Seuls le niveau d'éducation du chef de ménage (+17,2 %) et, de façon plus surprenante, la semence améliorée (-22,4 %) montrent un effet marginalement significatif sur le rendement (seuil de 10 %) ; les intrants et l'irrigation, bien que positivement associés au rendement, ne ressortent pas comme statistiquement significatifs dans ce modèle.
-]]
-
-
-.resultat[
-Le modèle capte 23,7 % de la variance globale du rendement, mais seulement 1,4 % une fois les effets fixes contrôlés — signe que les variables individuelles (intrants, semences, irrigation, éducation) expliquent peu la variation résiduelle du rendement, l'essentiel étant absorbé par les effets géographiques.
-
-]
----
 class: inverse, center, middle
 
 # 5. Module 4 : Commercialisation &amp; Marge Commerciale
