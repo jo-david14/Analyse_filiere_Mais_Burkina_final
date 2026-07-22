@@ -7,7 +7,7 @@ Ce projet analyse la filière maïs au Burkina Faso et son lien avec la sécurit
 - **`main.R`** — Script principal du projet
 - **`scripts/`** — Scripts R utilisés pour le nettoyage, le traitement et l'analyse des données
 - **`dashboard/`** — Tableau de bord interactif de visualisation des résultats
-- **`filiereBFA/`** — Ressources et scripts spécifiques à l'analyse de la filière
+- **`filiereBFA/`** — Package R développé pour ce projet, regroupant les fonctions spécifiques à l'analyse de la filière maïs
 - **`fichier_important_comprehension/`** — Documents de référence pour la compréhension des données et du contexte
 - **`sorties/`** — Résultats, graphiques et tableaux générés par les analyses
 - **`Rapport_Securite_alimentaire_Burkina_Faso.Rmd`** / **`.pdf`** — Rapport complet sur la sécurité alimentaire
@@ -44,6 +44,30 @@ Pour reproduire les analyses, placez les fichiers de données suivants dans le d
 - R (version récente recommandée)
 - RStudio
 - Packages R utilisés dans le projet (à installer selon les scripts, ex. `haven`, `tidyverse`, `dplyr`, etc.)
+
+## 📦 Installation du package `filiereBFA`
+
+Le dossier `filiereBFA/` est un package R développé spécifiquement pour ce projet. Pour l'installer localement :
+
+```r
+# Installer devtools si ce n'est pas déjà fait
+install.packages("devtools")
+
+# Installer le package depuis le dossier local
+devtools::install("filiereBFA")
+```
+
+Ou, après avoir cloné le dépôt, directement en ligne de commande :
+
+```r
+devtools::install_github("jo-david14/Analyse_filiere_Mais_Burkina_final", subdir = "filiereBFA")
+```
+
+Une fois installé, chargez le package dans vos scripts avec :
+
+```r
+library(filiereBFA)
+```
 
 ## 📄 Rapports
 
