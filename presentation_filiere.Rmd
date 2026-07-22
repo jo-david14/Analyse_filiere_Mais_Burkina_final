@@ -67,7 +67,7 @@ Encadrant : M. Mouhamadou Hady Diallo
 ### 🎯 Impact & Livrables
 6. **Impact sur la sécurité alimentaire** *(Module 5)*
 7. **Le Package R** `filiereBFA`
-8. **Recommandations & Conclusion**
+8. **Limites Recommandations & Conclusion**
 
 <br>
 .alerte[
@@ -358,6 +358,28 @@ Chaque millimètre supplémentaire de pluie est associé à une augmentation moy
 
 ---
 
+# Analyse des déterminants du rendement maïs
+
+.pull-left[
+.center[
+### Influence des divers variables
+```{r  out.width="100%"}
+knitr::include_graphics("sorties/regression_determinants_rendement.png")
+```
+]]
+
+
+.pull-right[
+.resultat[
+Seuls le niveau d'éducation du chef de ménage (+17,2 %) et, de façon plus surprenante, la semence améliorée (-22,4 %) montrent un effet marginalement significatif sur le rendement (seuil de 10 %) ; les intrants et l'irrigation, bien que positivement associés au rendement, ne ressortent pas comme statistiquement significatifs dans ce modèle.
+]]
+
+
+.resultat[
+Le modèle capte 23,7 % de la variance globale du rendement, mais seulement 1,4 % une fois les effets fixes contrôlés — signe que les variables individuelles (intrants, semences, irrigation, éducation) expliquent peu la variation résiduelle du rendement, l'essentiel étant absorbé par les effets géographiques.
+
+]
+---
 class: inverse, center, middle
 
 # 5. Module 4 : Commercialisation & Marge Commerciale
@@ -558,10 +580,33 @@ Le package est conçu de façon modulaire et peut être déployé sur d'autres p
 
 class: inverse, center, middle
 
-# 8. Recommandations de Politiques Publiques
+# 8. Limites et  Recommandations de Politiques Publiques
+
 
 ---
 
+# Limites de l'étude
+
+.alerte[
+Production non observée directement, reconstituée à partir des usages déclarés.
+]
+
+.alerte[
+Certaines unités locales de mesure n'ont pas pu être converties.
+]
+
+.alerte[
+Intrants mesurés au niveau du ménage, non par culture.
+]
+
+.alerte[
+Variables clés absentes du modèle (sols, pratiques, irrigation réelle).
+]
+
+.resultat[
+**À retenir :** les résultats sont des associations statistiques, non des relations causales.
+]
+---
 # Recommandations Opérationnelles
 
 .pull-left[
